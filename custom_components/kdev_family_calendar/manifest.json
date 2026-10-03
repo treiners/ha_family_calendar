@@ -1,0 +1,14 @@
+{
+  "domain": "kdev_family_calendar",
+  "name": "Family Calendar",
+  "codeowners": [
+    "@treiners"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/treiners/ha-family_calendar",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/treiners/ha-family_calendar/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
