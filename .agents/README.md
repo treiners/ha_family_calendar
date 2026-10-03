@@ -66,8 +66,8 @@ without clobbering an initialized repository:
 
 | Placeholder     | Means                                                            | Example in this repo    |
 | --------------- | ---------------------------------------------------------------- | ----------------------- |
-| `<domain>`      | the integration domain, i.e. the `DOMAIN` constant in `const.py` | `ha_integration_domain` |
-| `{ClassPrefix}` | the class name prefix used by every integration class            | `IntegrationBlueprint`  |
+| `<domain>`      | the integration domain, i.e. the `DOMAIN` constant in `const.py` | `kdev_family_calendar` |
+| `{ClassPrefix}` | the class name prefix used by every integration class            | `KdevFamilyCalendar`  |
 
 Substitute them mentally against `const.py` and `manifest.json`; never write them literally into code.
 
