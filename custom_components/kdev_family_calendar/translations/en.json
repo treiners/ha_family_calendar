@@ -1,0 +1,167 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose calendars",
+        "description": "Select the Home Assistant calendars to show in your family calendar.",
+        "data": {
+          "calendars": "Calendars"
+        },
+        "data_description": {
+          "calendars": "Select one or more existing calendar entities."
+        }
+      },
+      "calendar_settings": {
+        "title": "Calendar display settings",
+        "description": "Choose how {calendar} appears in the card.",
+        "data": {
+          "calendar_name": "Display name",
+          "calendar_color": "Calendar color",
+          "calendar_text_color": "Text color"
+        },
+        "data_description": {
+          "calendar_name": "The name shown for this calendar in the card.",
+          "calendar_color": "The background color used for events from this calendar.",
+          "calendar_text_color": "The text color used on filled events and banners from this calendar. Pick one that is readable on the calendar color."
+        }
+      },
+      "defaults": {
+        "title": "Display defaults",
+        "description": "Set the defaults used by calendar cards. Individual cards can override these in their YAML configuration.",
+        "data": {
+          "view": "Default view",
+          "layout": "Default layout",
+          "start_hour": "Visible hours start",
+          "end_hour": "Visible hours end",
+          "hour_height": "Timeline hour height",
+          "theme": "Calendar colors theme",
+          "light_day_color": "Light theme day background",
+          "light_today_color": "Light theme today background",
+          "light_card_color": "Light theme card background",
+          "dark_day_color": "Dark theme day background",
+          "dark_today_color": "Dark theme today background",
+          "dark_card_color": "Dark theme card background"
+        },
+        "data_description": {
+          "view": "The initial date range shown by cards unless their YAML specifies a fixed view.",
+          "layout": "The initial layout used by cards unless their YAML specifies a fixed layout.",
+          "start_hour": "The first hour shown in the timeline, from 0 to 22.",
+          "end_hour": "The last hour shown in the timeline, from 1 to 23.",
+          "hour_height": "Timeline height for each hour, in pixels.",
+          "theme": "Choose a color palette or follow the Home Assistant theme.",
+          "light_day_color": "Background for regular days when using the light palette.",
+          "light_today_color": "Background for today when using the light palette.",
+          "light_card_color": "Card background when using the light palette.",
+          "dark_day_color": "Background for regular days when using the dark palette.",
+          "dark_today_color": "Background for today when using the dark palette.",
+          "dark_card_color": "Card background when using the dark palette."
+        }
+      }
+    },
+    "error": {
+      "invalid_calendars": "Select at least one calendar.",
+      "invalid_hours": "The visible end hour must be later than the start hour."
+    },
+    "abort": {
+      "already_configured": "Family Calendar is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Calendar display defaults",
+        "description": "Change the calendars, palette, and defaults used by cards.",
+        "data": {
+          "calendars": "Calendars",
+          "view": "Default view",
+          "layout": "Default layout",
+          "start_hour": "Visible hours start",
+          "end_hour": "Visible hours end",
+          "hour_height": "Timeline hour height",
+          "theme": "Calendar colors theme",
+          "light_day_color": "Light theme day background",
+          "light_today_color": "Light theme today background",
+          "light_card_color": "Light theme card background",
+          "dark_day_color": "Dark theme day background",
+          "dark_today_color": "Dark theme today background",
+          "dark_card_color": "Dark theme card background"
+        },
+        "data_description": {
+          "calendars": "Select one or more calendar entities to display.",
+          "view": "The initial date range shown by cards unless their YAML specifies a fixed view.",
+          "layout": "The initial layout used by cards unless their YAML specifies a fixed layout.",
+          "start_hour": "The first hour shown in the timeline, from 0 to 22.",
+          "end_hour": "The last hour shown in the timeline, from 1 to 23.",
+          "hour_height": "Timeline height for each hour, in pixels.",
+          "theme": "Choose a color palette or follow the Home Assistant theme.",
+          "light_day_color": "Background for regular days when using the light palette.",
+          "light_today_color": "Background for today when using the light palette.",
+          "light_card_color": "Card background when using the light palette.",
+          "dark_day_color": "Background for regular days when using the dark palette.",
+          "dark_today_color": "Background for today when using the dark palette.",
+          "dark_card_color": "Card background when using the dark palette."
+        }
+      },
+      "calendar_settings": {
+        "title": "Calendar display settings",
+        "description": "Choose how {calendar} appears in the card.",
+        "data": {
+          "calendar_name": "Display name",
+          "calendar_color": "Calendar color",
+          "calendar_text_color": "Text color"
+        },
+        "data_description": {
+          "calendar_name": "The name shown for this calendar in the card.",
+          "calendar_color": "The background color used for events from this calendar.",
+          "calendar_text_color": "The text color used on filled events and banners from this calendar. Pick one that is readable on the calendar color."
+        }
+      },
+      "markers": {
+        "title": "Day markers and icon keywords",
+        "description": "Both match keywords in event titles. A day marker moves matching events out of the event list and shows an icon in the day header (at most two per day). An icon keyword changes the icon shown on the event. A card's own YAML overrides these defaults.",
+        "data": {
+          "day_markers": "Day markers",
+          "icon_keywords": "Icon keywords"
+        },
+        "data_description": {
+          "day_markers": "Keyword, icon and optional color.",
+          "icon_keywords": "Keyword and icon. Built-in keywords such as trash, piano and birthday still apply."
+        }
+      }
+    },
+    "error": {
+      "invalid_calendars": "Select at least one calendar.",
+      "invalid_hours": "The visible end hour must be later than the start hour."
+    }
+  },
+  "selector": {
+    "view": {
+      "options": {
+        "day": "Day",
+        "three_day": "3 days",
+        "week": "Week",
+        "month": "Month"
+      }
+    },
+    "layout": {
+      "options": {
+        "condensed": "Condensed",
+        "timeline": "Timeline"
+      }
+    },
+    "theme": {
+      "options": {
+        "system": "Follow Home Assistant",
+        "light": "Light",
+        "dark": "Dark"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "configuration": {
+        "name": "Configuration"
+      }
+    }
+  }
+}

@@ -6,15 +6,15 @@
 # - [tool.pylint.*] - Optional additional linting (Ruff is sufficient)
 
 [project]
-name = "ha_integration_domain"
+name = "kdev_family_calendar"
 version = "0.0.0"              # Version is managed in manifest.json only
 requires-python = ">=3.14"
 
 [tool.setuptools]
-packages = ["custom_components.ha_integration_domain"]
+packages = ["custom_components.kdev_family_calendar"]
 
 [tool.pyright]
-include = ["custom_components/ha_integration_domain"]
+include = ["custom_components/kdev_family_calendar"]
 exclude = [
     "**/.*",
     "**/__pycache__",
@@ -54,10 +54,12 @@ filterwarnings = [
     # never from this integration, so they would only mask Core's upstream work.
     "ignore:Setting custom ClientSession\\..* attribute is discouraged:DeprecationWarning",
     "ignore:Inheritance class .* from web\\.Application is discouraged:DeprecationWarning",
+    # HA Core's HTTP setup assigns string keys to aiohttp's Application; this warning is raised inside aiohttp.
+    "ignore:It is recommended to use web.AppKey instances for keys.:UserWarning",
 ]
 
 [tool.coverage.run]
-source = ["custom_components/ha_integration_domain"]
+source = ["custom_components/kdev_family_calendar"]
 omit = ["tests/*"]
 
 [tool.coverage.report]

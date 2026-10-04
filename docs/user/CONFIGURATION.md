@@ -1,244 +1,84 @@
 # Configuration Reference
 
-This document describes all configuration options and settings available in the Integration Blueprint custom integration.
+## Integration options
 
-## Integration Configuration
+Set during setup and editable later via **Configure** on the integration.
 
-### Initial Setup Options
+| Option                | Description                                                    |
+| --------------------- | -------------------------------------------------------------- |
+| Calendars             | The `calendar` entities to display                             |
+| Name / Color          | Per calendar: display name and event color                     |
+| Text color            | Per calendar: text on filled events, banners and all-day chips |
+| Default view          | Day, 3 days, week or month                                     |
+| Default layout        | Condensed or timeline                                          |
+| Start hour / End hour | Visible hours in the timeline layout                           |
+| Hour height           | Pixel height of one hour in the timeline layout                |
+| Theme                 | System, light or dark                                          |
+| Light / dark colors   | Day, today and card background colors for each palette         |
 
-These options are configured during initial setup via the Home Assistant UI.
+The integration exposes one sensor, `sensor.family_calendar_configuration`. The card reads its settings from it.
 
-#### Connection Settings
-
-| Option      | Type    | Required | Default | Description                                  |
-| ----------- | ------- | -------- | ------- | -------------------------------------------- |
-| **Host**    | string  | Yes      | -       | Hostname or IP address of the device/service |
-| **Port**    | integer | No       | 8080    | Connection port                              |
-| **API Key** | string  | Yes\*    | -       | Authentication key or token                  |
-| **Use SSL** | boolean | No       | false   | Enable HTTPS connection                      |
-
-\*Required if the device/service requires authentication.
-
-#### Update Settings
-
-| Option              | Type              | Required | Default  | Description                                         |
-| ------------------- | ----------------- | -------- | -------- | --------------------------------------------------- |
-| **Update Interval** | integer (seconds) | No       | 300      | How often to poll for updates (minimum: 30 seconds) |
-| **Name**            | string            | No       | "Device" | Friendly name for the integration instance          |
-
-### Options Flow (Reconfiguration)
-
-After initial setup, you can modify settings:
-
-1. Go to **Settings** → **Devices & Services**
-2. Find "Integration Blueprint"
-3. Click **Configure**
-4. Modify settings
-5. Click **Submit**
-
-**Available options:**
-
-- Update interval
-- Name/identifier
-- Connection timeout
-- Additional features (device-specific)
-
-## Entity Configuration
-
-### Entity Customization
-
-Customize entities via the UI or `configuration.yaml`:
-
-#### Via Home Assistant UI
-
-1. Go to **Settings** → **Devices & Services** → **Entities**
-2. Find and click the entity
-3. Click the settings icon
-4. Modify:
-   - Entity ID
-   - Name
-   - Icon
-   - Device class (for applicable entities)
-   - Area assignment
-
-#### Via configuration.yaml
+## Card options
 
 ```yaml
-homeassistant:
-  customize:
-    sensor.device_name_sensor:
-      friendly_name: "Custom Sensor Name"
-      icon: mdi:custom-icon
-      unit_of_measurement: "units"
+type: custom:family-calendar-card
+instance: main
 ```
 
-### Disabling Entities
+| Key             | Description                                                |
+| --------------- | ---------------------------------------------------------- |
+| `instance`      | Required. Unique name for this card                        |
+| `days`          | Fixed number of days to show, instead of the view selector |
+| `view`          | `day`, `three_day`, `week` or `month`                      |
+| `layout`        | `condensed` or `timeline`                                  |
+| `multi_day`     | `banners` or `segments`                                    |
+| `event_style`   | `bar` or `filled`                                          |
+| `start_hour`    | First visible hour in the timeline layout                  |
+| `end_hour`      | Last visible hour in the timeline layout                   |
+| `hour_height`   | Pixel height of one hour                                   |
+| `theme`         | `system`, `light` or `dark`                                |
+| `icon_keywords` | Extra or overriding keyword → icon mappings                |
+| `day_markers`   | Keyword-based markers shown in the day header              |
+| `config_entity` | Alternative configuration sensor entity                    |
 
-If you don't need certain entities:
+Setting `view`, `layout`, `multi_day`, `event_style`, `start_hour`, `end_hour`, `hour_height` or `theme` in YAML locks
+that choice: the matching toolbar control is hidden and the card ignores the saved browser preference.
 
-1. Go to **Settings** → **Devices & Services** → **Entities**
-2. Find the entity
-3. Click it, then click **Settings** icon
-4. Toggle **Enable entity** off
+### Icons by keyword
 
-Disabled entities won't update or consume resources.
-
-## Services
-
-The integration provides the following services:
-
-### `ha_integration_domain.refresh_data`
-
-Fetch the current device state immediately instead of waiting for the next poll.
-
-**Service data:**
-
-| Parameter         | Type   | Required | Description                        |
-| ----------------- | ------ | -------- | ---------------------------------- |
-| `config_entry_id` | string | Yes      | The configuration entry to refresh |
-
-The action returns `refreshed_at`, `success` and `value_count`, so an automation can react to
-whether the refresh actually produced data.
-
-**Example:**
+Event titles containing a keyword get its icon. Built-in keywords include trash, recycling, haircut, piano, violin,
+soccer, football, swim, doctor, dentist, birthday and school. Add or override:
 
 ```yaml
-action: ha_integration_domain.refresh_data
-data:
-  config_entry_id: 01JG3T2Q6Z9K4V8P0N5R7X2M1A
+icon_keywords:
+  karate: mdi:karate
+  trash: mdi:delete
 ```
 
-### Using Services in Automations
+### Day markers
+
+An event whose title contains a keyword is shown as an icon in the day header instead of in the event list. At most
+two icons are shown per day, and identical icon and color pairs are shown once.
 
 ```yaml
-automation:
-  - alias: "Refresh at sunset"
-    trigger:
-      - trigger: sun
-        event: sunset
-    action:
-      - action: ha_integration_domain.refresh_data
-        data:
-          config_entry_id: 01JG3T2Q6Z9K4V8P0N5R7X2M1A
+day_markers:
+  - keyword: greenwaste
+    icon: mdi:trash-can
+    color: "#00ff00"
+  - keyword: yellowbin
+    icon: mdi:recycle
+    color: "#FFEA00"
 ```
 
-## Advanced Configuration
+## Troubleshooting
 
-### Multiple Instances
+- **Settings don't show on the card:** reload the integration and hard-refresh the browser.
+- **Config entry fails to load:** check **Settings → System → Logs** for `kdev_family_calendar`.
 
-You can add multiple instances of this integration for different devices:
+## Default day markers and icon keywords
 
-1. Go to **Settings** → **Devices & Services**
-2. Click **+ Add Integration**
-3. Search for "Integration Blueprint"
-4. Configure with different connection details
+Open the integration's **Configure** dialog and continue past the calendar screens to the last step. There you can
+define default day markers (keyword, icon, optional color) and icon keywords (keyword, icon) for every card.
 
-Each instance creates separate entities with unique entity IDs.
-
-### Network Configuration
-
-If the device is on a different network or behind a firewall:
-
-- Ensure ports are open (default: 8080)
-- Configure port forwarding if needed
-- Consider VPN for remote access
-- Some devices may require static IP addresses
-
-### Polling Behavior
-
-The integration uses polling to fetch updates:
-
-- **Minimum interval:** 30 seconds (prevents overloading the device)
-- **Recommended interval:** 5 minutes (default)
-- **Longer intervals:** Save resources but reduce responsiveness
-
-Adjust based on your needs:
-
-- Real-time monitoring: 30-60 seconds
-- Regular updates: 5 minutes
-- Slow-changing values: 15-30 minutes
-
-## Diagnostic Data
-
-The integration provides diagnostic data for troubleshooting:
-
-1. Go to **Settings** → **Devices & Services**
-2. Find "Integration Blueprint"
-3. Click on the device
-4. Click **Download Diagnostics**
-
-Diagnostic data includes:
-
-- Connection status
-- Last update timestamp
-- API response data
-- Entity states
-- Error history
-
-**Privacy note:** Diagnostic data may contain sensitive information. Review before sharing.
-
-## Blueprints
-
-The integration works with Home Assistant Blueprints for reusable automations:
-
-### Example Blueprint
-
-```yaml
-blueprint:
-  name: Integration Blueprint Alert
-  description: Send notification when sensor exceeds threshold
-  domain: automation
-  input:
-    sensor_entity:
-      name: Sensor
-      selector:
-        entity:
-          domain: sensor
-          integration: ha_integration_domain
-    threshold:
-      name: Threshold
-      selector:
-        number:
-          min: 0
-          max: 100
-
-trigger:
-  - trigger: numeric_state
-    entity_id: !input sensor_entity
-    above: !input threshold
-
-action:
-  - action: notify.notify
-    data:
-      message: "Sensor exceeded threshold!"
-```
-
-## Configuration Examples
-
-See [EXAMPLES.md](./EXAMPLES.md) for complete automation and dashboard examples.
-
-## Troubleshooting Configuration
-
-### Config Entry Fails to Load
-
-If the integration fails to load after configuration:
-
-1. Check Home Assistant logs for errors
-2. Verify connection details are correct
-3. Test connectivity from Home Assistant to the device
-4. Try removing and re-adding the integration
-
-### Options Don't Save
-
-If configuration changes aren't persisted:
-
-1. Check for validation errors in the UI
-2. Ensure values are within allowed ranges
-3. Review logs for detailed error messages
-4. Try restarting Home Assistant
-
-## Related Documentation
-
-- [Getting Started](./GETTING_STARTED.md) - Installation and initial setup
-- [Examples](./EXAMPLES.md) - Automation and dashboard examples
-- [GitHub Issues](https://github.com/jpawlowski/hacs.integration_blueprint/issues) - Report problems
+A `day_markers` list in a card's YAML replaces the default markers for that card. A card's `icon_keywords` are merged
+over the integration's keywords, which are merged over the built-in ones.
