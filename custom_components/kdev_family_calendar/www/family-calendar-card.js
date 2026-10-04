@@ -56,6 +56,7 @@ class FamilyCalendarCard extends HTMLElement {
     this._calendarEvents = {};
     this._subscriptionKey = null;
     this._built = false;
+    this._anchorDate = null;
   }
 
   set hass(hass) {
@@ -152,7 +153,9 @@ class FamilyCalendarCard extends HTMLElement {
       this._endHour = this._startHour + 1;
     }
     this._theme = this._yamlLocks.has("theme") ? this._config.theme : (defaults.theme || "system");
-    this._anchorDate = this._defaultAnchor(this._viewMode, this._dateToISO(new Date()));
+    if (!this._anchorDate) {
+      this._anchorDate = this._defaultAnchor(this._viewMode, this._dateToISO(new Date()));
+    }
     const configuredIds = this._calendarList.map((calendar) => calendar.entity_id);
     this._hiddenList = Array.isArray(saved.hidden_calendars)
       ? saved.hidden_calendars.filter((entityId) => configuredIds.includes(entityId))
@@ -168,8 +171,6 @@ class FamilyCalendarCard extends HTMLElement {
     const anchor = new Date(`${date}T00:00:00`);
     if (view === "month") {
       anchor.setDate(1);
-    } else if (view === "week") {
-      anchor.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7));
     }
     return this._dateToISO(anchor);
   }
@@ -997,13 +998,29 @@ class FamilyCalendarCard extends HTMLElement {
     return { markers: markers.slice(0, 2), remaining };
   }
 
+  _readableMarkerColor(color) {
+    const luminance = (value) => {
+      const match = /^#([0-9a-f]{6})$/i.exec(String(value));
+      if (!match) return null;
+      const [r, g, b] = [0, 2, 4].map((i) => parseInt(match[1].slice(i, i + 2), 16));
+      return 0.299 * r + 0.587 * g + 0.114 * b;
+    };
+    const iconLuminance = luminance(color);
+    if (iconLuminance === null) return "";
+    const dark = this._theme === "dark" || (this._theme === "system" && Boolean(this._hass.themes?.darkMode));
+    const paperLuminance = luminance(this._settings[`${dark ? "dark" : "light"}_day_color`]);
+    if (paperLuminance !== null && Math.abs(iconLuminance - paperLuminance) < 60) return "";
+    return color;
+  }
+
   _dayMarkersHtml(markers) {
     if (markers.length === 0) return "";
     let html = '<span class="fc-day-markers">';
     let i = 0;
     while (i < markers.length) {
       const mk = markers[i];
-      const style = mk.color ? ` style="color:${mk.color}"` : "";
+      const color = this._readableMarkerColor(mk.color);
+      const style = color ? ` style="color:${color}"` : "";
       html += `<ha-icon icon="${mk.icon}" class="fc-day-marker-icon"${style}></ha-icon>`;
       i += 1;
     }
@@ -2022,6 +2039,19 @@ FamilyCalendarCard.styles = `
     top: 0;
     background: linear-gradient(to bottom, var(--fc-ink-soft), transparent);
     opacity: 0.35;
+  }
+  .fc-ev-filled.fc-tl-event--clip-top::before,
+  .fc-ev-filled.fc-tl-event--clip-bottom::after {
+    height: 16px;
+    opacity: 0.55;
+  }
+  .fc-ev-filled.fc-tl-event--clip-top::before {
+    background: linear-gradient(to bottom, var(--fc-ev-text), transparent);
+    border-top: 2px solid var(--fc-ev-text);
+  }
+  .fc-ev-filled.fc-tl-event--clip-bottom::after {
+    background: linear-gradient(to top, var(--fc-ev-text), transparent);
+    border-bottom: 2px solid var(--fc-ev-text);
   }
   .fc-tl-event--clip-bottom::after {
     bottom: 0;
