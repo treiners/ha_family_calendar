@@ -5,12 +5,16 @@
     "@treiners"
   ],
   "config_flow": true,
-  "dependencies": ["calendar", "frontend", "http"],
+  "dependencies": [
+    "calendar",
+    "frontend",
+    "http"
+  ],
   "documentation": "https://github.com/treiners/ha_family_calendar",
   "integration_type": "helper",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/treiners/ha_family_calendar/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
