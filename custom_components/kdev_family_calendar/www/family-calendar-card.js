@@ -61,7 +61,7 @@ class FamilyCalendarCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    const stateObj = hass.states[this._sensorEntity];
+    const stateObj = hass.states[this._sensorEntity] || this._findConfigurationState(hass);
 
     if (!stateObj) {
       this._clearSubscriptions();
@@ -83,6 +83,18 @@ class FamilyCalendarCard extends HTMLElement {
     this._renderNav();
     this._render();
     void this._ensureSubscriptions();
+  }
+
+  _findConfigurationState(hass) {
+    if (this._config.config_entity || this._config.entity) {
+      return undefined;
+    }
+    return Object.values(hass.states).find(
+      (state) =>
+        state.entity_id.startsWith("sensor.") &&
+        Array.isArray(state.attributes?.calendars) &&
+        state.attributes?.defaults !== undefined
+    );
   }
 
   disconnectedCallback() {
@@ -2136,7 +2148,9 @@ FamilyCalendarCard.styles = `
   }
 `;
 
-customElements.define("family-calendar-card", FamilyCalendarCard);
+if (!customElements.get("family-calendar-card")) {
+  customElements.define("family-calendar-card", FamilyCalendarCard);
+}
 
 window.customCards = window.customCards || [];
 window.customCards.push({
