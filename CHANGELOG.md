@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/treiners/ha_family_calendar/compare/v0.1.2...v0.1.3) (2026-10-07)
+
+
+### Features
+
+* **manifest:** show the integration under Devices & services ([8053da1](https://github.com/treiners/ha_family_calendar/commit/8053da1c54377655a3b50f063951aa89e19b928d))
+
+
+### Bug Fixes
+
+* **card:** find the configuration sensor when its entity ID differs ([571b009](https://github.com/treiners/ha_family_calendar/commit/571b0096103737465d13483166dcb93f064b6e5b))
+
 ## [0.1.2](https://github.com/treiners/ha_family_calendar/compare/v0.1.1...v0.1.2) (2026-10-04)
 
 
