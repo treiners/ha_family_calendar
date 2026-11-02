@@ -36,7 +36,7 @@ BODY_MAX_LINES = 500
 # Identifiers that initialize.sh rewrites. Skills must use the <domain> and {ClassPrefix}
 # placeholders instead, otherwise template sync would overwrite an initialized repository
 # with the blueprint's own names.
-FORBIDDEN_IDENTIFIERS = ("kdev_family_calendar", "KdevFamilyCalendar")
+FORBIDDEN_IDENTIFIERS = ("ha_integration_domain", "IntegrationBlueprint")
 
 # Instructions files that are meant to load in every session, so they carry no `paths`.
 UNCONDITIONAL_INSTRUCTIONS = {"blueprint.commit-message.instructions.md"}
