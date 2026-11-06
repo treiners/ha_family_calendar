@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
     from .coordinator import KdevFamilyCalendarDataUpdateCoordinator
+    from .utils.errands_store import KdevFamilyCalendarErrandsStore
 
 type KdevFamilyCalendarConfigEntry = ConfigEntry[KdevFamilyCalendarData]
 
@@ -16,3 +17,4 @@ class KdevFamilyCalendarData:
     """Runtime data stored on the config entry after setup."""
 
     coordinator: KdevFamilyCalendarDataUpdateCoordinator
+    errands: KdevFamilyCalendarErrandsStore | None
