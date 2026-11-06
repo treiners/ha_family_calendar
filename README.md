@@ -11,6 +11,7 @@ integration settings, then add the `custom:family-calendar-card` card to any das
 
 - Day, 3-day, week and month views, always starting from today
 - Several calendars in one view, each with its own name, color and text color
+- Visual card editor and per-card larger family filter buttons
 - Condensed or timeline layout, with multi-day events as banners or per-day segments
 - Colored-bar or fully filled event style
 - Create, edit and delete events from the card (click an empty slot to add one)
@@ -48,9 +49,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup.
 
 ## 🤖 AI-Assisted Development
 
-This integration was developed with AI assistance (GitHub Copilot). Automated tests cover the config flow and the
-configuration sensor; the card itself has no automated tests and was checked manually on a Home Assistant 2026.8
-development instance.
+This integration was developed with AI assistance (GitHub Copilot). Automated tests cover the config flow, the
+configuration sensor, card editor and subscription recovery. The card was also checked manually on a Home Assistant
+2026.8 development instance.
 
 ## 📄 License
 

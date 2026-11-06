@@ -114,6 +114,31 @@ Each decision is documented with:
 
 ---
 
+### Store shared errands in Home Assistant
+
+**Date:** 2026-11-06
+
+**Context:** Errands and star balances must survive restarts and stay consistent across family devices. They are
+separate from calendar events and need their own history.
+
+**Decision:** Use an entry-scoped, versioned Home Assistant store and an authenticated WebSocket interface.
+Serialize writes and use revisions to reject stale changes. Verify saved data before reporting a successful update.
+
+**Rationale:**
+
+- Browser storage is device-specific, while the Home Assistant store is shared and included in normal backups.
+- Calendar events do not provide the required independent tasks, balances and corrections.
+- WebSocket subscriptions update connected cards without polling.
+
+**Consequences:**
+
+- Storage schemas need validation and migrations as the feature evolves.
+- Each mutation requires a storage write and read-back; stale clients must refresh before retrying.
+- Restoring or removing the integration's stored data affects errands independently of the source calendars.
+- The unlocked parent workflow does not provide a separate security boundary; Home Assistant permissions still apply.
+
+---
+
 ## Future Considerations
 
 ### State Restoration

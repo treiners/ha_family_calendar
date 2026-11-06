@@ -26,7 +26,8 @@ on the integration.
 
 ## Add the card
 
-Edit a dashboard, add a **Manual** card and use:
+Edit a dashboard and add **Family Calendar Card** from the card picker. Its visual editor can configure the card's
+options, including larger family filter buttons. Alternatively, add a **Manual** card and use:
 
 ```yaml
 type: custom:family-calendar-card
@@ -66,6 +67,8 @@ views:
 ## Troubleshooting
 
 - **Card not found:** restart Home Assistant after installing, then hard-refresh the browser.
+- **Calendar not found after startup:** the card retries failed calendar subscriptions every 10 seconds. If the error
+  persists, check that the calendar entity is available.
 - **No events:** check the calendar entities are selected in the integration's options.
 - **Add event fails:** the calendar must support creating events.
 - **Debug logging:** add `custom_components.kdev_family_calendar: debug` under `logger: logs:` in `configuration.yaml`.
