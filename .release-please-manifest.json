@@ -1,6 +1,3 @@
 {
-  ".": "0.1.4",
-  "release-type": "simple",
-  "prerelease": true
-  
+  ".": "0.1.4"
 }
