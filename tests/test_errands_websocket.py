@@ -314,7 +314,9 @@ async def test_existing_person_defaults_to_visible(
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     ws = await hass_ws_client()
     await _send(ws, config_entry, "get")
-    assert (await ws.receive_json())["result"]["people"][0]["enabled"] is True
+    state = (await ws.receive_json())["result"]
+    assert state["people"][0]["enabled"] is True
+    assert state["rewards"] == []
 
 
 async def test_invalid_recurring_occurrence_does_not_disable_calendar(

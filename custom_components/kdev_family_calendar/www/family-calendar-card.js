@@ -25,6 +25,29 @@ const DEFAULT_ICON_KEYWORDS = {
   school: "mdi:school",
 };
 
+const FAMILY_ERRAND_ICONS = {
+  "family_calendar:room_cleanup": {
+    label: "Room cleanup",
+    art: '<rect x="7" y="33" width="50" height="19" rx="4" fill="#6aa9e9"/><path d="M12 32V20a4 4 0 0 1 4-4h30a4 4 0 0 1 4 4v12" fill="#a5d5ff"/><rect x="12" y="25" width="16" height="8" rx="3" fill="#fff"/><path d="M7 39h50v10H7z" fill="#f3a5b7"/><path d="M16 52v5m32-5v5" stroke="#67564c" stroke-width="4" stroke-linecap="round"/><path d="M53 8v9M48.5 12.5h9" stroke="#ffb629" stroke-width="3" stroke-linecap="round"/>',
+  },
+  "family_calendar:empty_dishwasher": {
+    label: "Empty dishwasher",
+    art: '<rect x="11" y="7" width="42" height="50" rx="5" fill="#91c5d9"/><rect x="15" y="17" width="34" height="33" rx="3" fill="#e6f5f8"/><path d="M15 38h34M20 33h24" stroke="#6b8fa2" stroke-width="3"/><circle cx="27" cy="27" r="7" fill="#fff" stroke="#f2ae57" stroke-width="3"/><path d="M39 21v11m-4-7h8" stroke="#9c7bd5" stroke-width="3" stroke-linecap="round"/><circle cx="18" cy="12" r="2" fill="#6b8fa2"/><circle cx="25" cy="12" r="2" fill="#6b8fa2"/>',
+  },
+  "family_calendar:put_laundry_away": {
+    label: "Put laundry away",
+    art: '<rect x="8" y="10" width="48" height="46" rx="5" fill="#ddae78"/><path d="M8 25h48M8 40h48" stroke="#a8754d" stroke-width="3"/><path d="M28 18h8m-8 15h8m-8 15h8" stroke="#fff1d2" stroke-width="3" stroke-linecap="round"/><path d="m22 7 5-4h10l5 4-3 6-4-2v8h-6v-8l-4 2z" fill="#8a8ee8" stroke="#666fc8" stroke-width="2" stroke-linejoin="round"/>',
+  },
+  "family_calendar:homework": {
+    label: "Homework",
+    art: '<rect x="10" y="9" width="38" height="47" rx="4" fill="#83bcea"/><rect x="15" y="13" width="29" height="38" rx="2" fill="#fff9e8"/><path d="M20 22h19M20 29h19M20 36h13" stroke="#91b9d1" stroke-width="2.5" stroke-linecap="round"/><path d="m36 48 13-27 6 3-13 27-8 4z" fill="#ffcc5c" stroke="#b57f36" stroke-width="2" stroke-linejoin="round"/><path d="m49 21 2-4 6 3-2 4z" fill="#f58e97"/>',
+  },
+  "family_calendar:empty_school_bag": {
+    label: "Empty school bag",
+    art: '<path d="M23 15v-3a9 9 0 0 1 18 0v3" fill="none" stroke="#74549f" stroke-width="4"/><rect x="14" y="15" width="36" height="42" rx="10" fill="#ad86d8"/><rect x="19" y="34" width="26" height="17" rx="5" fill="#ebabc5"/><path d="M23 31h18" stroke="#f8e9ff" stroke-width="3" stroke-linecap="round"/><rect x="21" y="6" width="13" height="18" rx="2" fill="#ffcf70" transform="rotate(-16 21 6)"/><path d="m42 9 3 3 6-6" fill="none" stroke="#61c69c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
+  },
+};
+
 class FamilyCalendarCard extends HTMLElement {
   static getConfigElement() {
     return document.createElement("family-calendar-card-editor");
@@ -382,6 +405,9 @@ class FamilyCalendarCard extends HTMLElement {
     const dark = this._theme === "dark" || (this._theme === "system" && Boolean(this._hass.themes?.darkMode));
     const prefix = dark ? "dark_" : "light_";
     const card = this._root.querySelector("ha-card");
+    const weekdaySize = Number(this._settings.weekday_font_size);
+    card.style.setProperty("--fc-weekday-size", `${Number.isFinite(weekdaySize) && weekdaySize >= 12 && weekdaySize <= 24 ? weekdaySize : 16}px`);
+    card.style.setProperty("--fc-header-background", this._settings[`${prefix}header_color`] || "transparent");
     card.style.setProperty("--fc-paper", this._settings[`${prefix}day_color`] || "var(--secondary-background-color)");
     card.style.setProperty("--fc-paper-today", this._settings[`${prefix}today_color`] || "var(--primary-color)");
     card.style.setProperty("--card-background-color", this._settings[`${prefix}card_color`] || "var(--card-background-color)");
@@ -889,6 +915,13 @@ class FamilyCalendarCard extends HTMLElement {
       .replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   }
 
+  _errandIconHtml(icon) {
+    const artwork = FAMILY_ERRAND_ICONS[icon]?.art;
+    return artwork
+      ? `<svg class="fc-errand-icon" viewBox="0 0 64 64" aria-hidden="true">${artwork}</svg>`
+      : `<ha-icon class="fc-errand-icon" icon="${this._escapeAttr(icon || "mdi:clipboard-check-outline")}" aria-hidden="true"></ha-icon>`;
+  }
+
   _formatTime(raw, allDay) {
     if (!raw) return "";
     if (allDay) return "All day";
@@ -1037,7 +1070,8 @@ class FamilyCalendarCard extends HTMLElement {
         <div class="fc-errand-toolbar">
           <strong>${person ? `${this._escape(calendar?.name)} · ★ ${balance}` : "Family errands"}</strong>
           ${this._errandsCanManage ? `<button type="button" data-action="people" ${disabled}>People</button>
-          <button type="button" data-action="library" ${disabled}>Library</button>` : ""}
+          <button type="button" data-action="library" ${disabled}>Library</button>
+          <button type="button" data-action="rewards" ${disabled}>Rewards</button>` : ""}
           ${person ? `${this._errandsCanManage ? `<button type="button" data-action="add" ${disabled}>Add errand</button>
             <button type="button" data-action="manage" ${disabled}>Manage</button>` : ""}
             ${this._errandsCanAct ? `<button type="button" data-action="deduct" ${disabled}>Use stars</button>` : ""}
@@ -1047,10 +1081,15 @@ class FamilyCalendarCard extends HTMLElement {
           <p class="fc-errand-hint">${person.approval_required ? "Completed errands need confirmation." : "Stars are awarded immediately."}</p>
           <div class="fc-errand-grid">
             ${active.length ? active.map((item) => `
-              <article class="fc-errand-tile">
-                <strong>${this._escape(item.name)}</strong>
-                <span>★ ${item.stars}${item.day ? ` · ${this._escape(item.day)}` : ""}</span>
-                <span>${item.status === "pending" ? "Waiting for confirmation" : "Ready to do"}</span>
+              <article class="fc-errand-tile fc-errand-stars-${item.stars <= 2 ? "low" : item.stars <= 4 ? "medium" : "high"}">
+                <div class="fc-errand-content">
+                  <div class="fc-errand-text">
+                    <strong>${this._escape(item.name)}</strong>
+                    <span>★ ${item.stars}${item.day ? ` · ${this._escape(item.day)}` : ""}</span>
+                    <span>${item.status === "pending" ? "Waiting for confirmation" : "Ready to do"}</span>
+                  </div>
+                  ${this._errandIconHtml(item.icon)}
+                </div>
                 <div class="fc-errand-actions">
                   ${item.status === "open"
                     ? this._errandsCanAct ? `<button type="button" data-action="complete" data-id="${this._escapeAttr(item.id)}" ${disabled}>Done</button>` : ""
@@ -1067,6 +1106,7 @@ class FamilyCalendarCard extends HTMLElement {
       const { action, id } = button.dataset;
       if (action === "people") this._showErrandPeople();
       else if (action === "library") this._showErrandLibrary();
+      else if (action === "rewards") this._showRewards();
       else if (action === "add") this._showErrandForm();
       else if (action === "manage") this._showErrandManage(person);
       else if (action === "edit") this._showErrandForm(state.assignments.find((item) => item.id === id));
@@ -1141,6 +1181,7 @@ class FamilyCalendarCard extends HTMLElement {
       <form class="fc-errand-form" id="fc-errand-form">
         <label>Name <input name="name" required maxlength="200" value="${this._escapeAttr(assignment?.name || template?.name || "")}"></label>
         <label>Stars <input name="stars" type="number" min="1" max="1000000" required value="${assignment?.stars || template?.stars || 1}"></label>
+        <div class="fc-errand-icon-picker"></div>
         ${assignment ? "" : `<fieldset><legend>Assign to</legend>${state.people.filter((person) => person.enabled !== false &&
           this._calendarList.some((calendar) => calendar.entity_id === person.calendar_entity)
         ).map((person) => `<label><input type="checkbox" name="person" value="${this._escapeAttr(person.id)}"
@@ -1162,6 +1203,7 @@ class FamilyCalendarCard extends HTMLElement {
       </form>
     `);
     const form = body.querySelector("#fc-errand-form");
+    void this._mountErrandIconPicker(form, assignment?.icon ?? template?.icon ?? "");
     const kind = form.querySelector('[name="kind"]');
     const updateSchedule = () => {
       body.querySelector("#fc-errand-days").hidden = kind.value !== "weekly";
@@ -1174,6 +1216,7 @@ class FamilyCalendarCard extends HTMLElement {
       const args = {
         name: form.querySelector('[name="name"]').value,
         stars: Number(form.querySelector('[name="stars"]').value),
+        icon: form.querySelector('[name="icon"]').value.trim() || null,
         schedule: {
           kind: kind.value,
           weekdays: kind.value === "weekly" ? [...form.querySelectorAll('[name="weekday"]:checked')].map((item) => Number(item.value)) : [],
@@ -1220,7 +1263,10 @@ class FamilyCalendarCard extends HTMLElement {
     const body = this._errandModal("Errand library", `
       <p>Save reusable ideas here; assigning one does not remove it from the library.</p>
       <div class="fc-errand-grid">${templates.map((item) => `<article class="fc-errand-tile">
-        <strong>${this._escape(item.name)}</strong><span>★ ${item.stars}</span>
+        <div class="fc-errand-content">
+          <div class="fc-errand-text"><strong>${this._escape(item.name)}</strong><span>★ ${item.stars}</span></div>
+          ${this._errandIconHtml(item.icon)}
+        </div>
         <div class="fc-errand-actions">
           <button type="button" data-action="use" data-id="${this._escapeAttr(item.id)}">Assign</button>
           <button type="button" data-action="edit" data-id="${this._escapeAttr(item.id)}">Edit</button>
@@ -1243,28 +1289,136 @@ class FamilyCalendarCard extends HTMLElement {
       <form class="fc-errand-form">
         <label>Name <input name="name" required maxlength="200" value="${this._escapeAttr(template?.name || "")}"></label>
         <label>Stars <input name="stars" type="number" min="1" max="1000000" required value="${template?.stars || 1}"></label>
+        <div class="fc-errand-icon-picker"></div>
         <button type="submit">Save to library</button>
+      </form>
+    `);
+    const form = body.querySelector("form");
+    void this._mountErrandIconPicker(form, template?.icon ?? "");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const args = {
+        name: form.querySelector('[name="name"]').value,
+        stars: Number(form.querySelector('[name="stars"]').value),
+        icon: form.querySelector('[name="icon"]').value.trim() || null,
+      };
+      if (template) args.id = template.id;
+      if (await this._applyErrand("save_template", args)) this._showErrandLibrary();
+    });
+  }
+
+  async _mountErrandIconPicker(form, icon) {
+    const container = form.querySelector(".fc-errand-icon-picker");
+    container.innerHTML = `<label>Icon <input name="icon" value="${this._escapeAttr(icon)}" placeholder="mdi:clipboard-check-outline"></label>
+      <fieldset><legend>Family illustrations</legend><div class="fc-errand-icon-choices">
+        ${Object.entries(FAMILY_ERRAND_ICONS).map(([id, item]) => `<button type="button" class="fc-errand-icon-choice"
+          data-icon="${id}" aria-label="${item.label}" aria-pressed="${icon === id}">
+          ${this._errandIconHtml(id)}<span>${item.label}</span>
+        </button>`).join("")}
+      </div></fieldset>`;
+    const input = container.querySelector('[name="icon"]');
+    const buttons = container.querySelectorAll("[data-icon]");
+    const updateSelection = () => buttons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button.dataset.icon === input.value))
+    );
+    input.addEventListener("input", updateSelection);
+    let picker;
+    buttons.forEach((button) => button.addEventListener("click", () => {
+      input.value = input.value === button.dataset.icon ? "" : button.dataset.icon;
+      if (picker) picker.data = { icon: "" };
+      updateSelection();
+    }));
+    try {
+      if (!customElements.get("ha-form")) {
+        const helpers = await window.loadCardHelpers();
+        await helpers.createCardElement({ type: "entities", entities: [] });
+        await customElements.get("hui-entities-card").getConfigElement();
+      }
+      if (!form.isConnected) return;
+      picker = document.createElement("ha-form");
+      picker.hass = this._hass;
+      picker.schema = [{ name: "icon", selector: { icon: {} } }];
+      picker.data = { icon: Object.hasOwn(FAMILY_ERRAND_ICONS, input.value) ? "" : input.value };
+      picker.computeLabel = () => "Icon";
+      picker.addEventListener("value-changed", (event) => {
+        const selected = event.detail.value.icon || "";
+        if (selected || !Object.hasOwn(FAMILY_ERRAND_ICONS, input.value)) input.value = selected;
+        updateSelection();
+      });
+      input.type = "hidden";
+      input.parentElement.hidden = true;
+      container.prepend(picker);
+    } catch (error) {
+      const hint = document.createElement("p");
+      hint.textContent = "Icon picker unavailable. Enter an icon name such as mdi:home.";
+      container.append(hint);
+      console.error("Could not load the Home Assistant icon picker", error);
+    }
+  }
+
+  _showRewards() {
+    const rewards = this._errandsState.rewards || [];
+    const body = this._errandModal("Manage rewards", `
+      ${rewards.length ? rewards.map((reward) => `<div class="fc-errand-row">
+        <span>${this._escape(reward.name)} · ★ ${reward.stars}</span>
+        <button type="button" data-action="edit" data-id="${this._escapeAttr(reward.id)}">Edit</button>
+        <button type="button" data-action="delete" data-id="${this._escapeAttr(reward.id)}">Delete</button>
+      </div>`).join("") : "<p>No rewards yet.</p>"}
+      <button type="button" id="fc-reward-add">Add reward</button>
+    `);
+    body.querySelector("#fc-reward-add").addEventListener("click", () => this._showRewardForm());
+    body.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", async () => {
+      const reward = rewards.find((item) => item.id === button.dataset.id);
+      if (button.dataset.action === "edit") this._showRewardForm(reward);
+      else if (window.confirm(`Delete "${reward.name}"? Past star history will be kept.`) &&
+        await this._applyErrand("delete_reward", { id: reward.id })) this._showRewards();
+    }));
+  }
+
+  _showRewardForm(reward = null) {
+    const body = this._errandModal(reward ? "Edit reward" : "Add reward", `
+      <form class="fc-errand-form">
+        <label>Reward <input name="name" required maxlength="200" value="${this._escapeAttr(reward?.name || "")}"></label>
+        <label>Stars needed <input name="stars" type="number" min="1" max="1000000" required value="${reward?.stars || 1}"></label>
+        <button type="submit">Save reward</button>
       </form>
     `);
     const form = body.querySelector("form");
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const args = { name: form.querySelector('[name="name"]').value, stars: Number(form.querySelector('[name="stars"]').value) };
-      if (template) args.id = template.id;
-      if (await this._applyErrand("save_template", args)) this._showErrandLibrary();
+      if (reward) args.id = reward.id;
+      if (await this._applyErrand("save_reward", args)) this._showRewards();
     });
   }
 
   _showErrandDeduction(person) {
+    const rewards = this._errandsState.rewards || [];
     const body = this._errandModal("Use stars", `
+      ${rewards.length ? `<form class="fc-errand-form" id="fc-redeem-form">
+        <label>Reward <select name="reward" required>
+          <option value="">Choose a reward</option>
+          ${rewards.map((reward) => `<option value="${this._escapeAttr(reward.id)}">${this._escape(reward.name)} · ★ ${reward.stars}</option>`).join("")}
+        </select></label>
+        <button type="submit">Confirm reward</button>
+      </form>` : "<p>No saved rewards yet.</p>"}
+      <h4>Other reason</h4>
       <p>Stars can be deducted even when this makes the balance negative.</p>
-      <form class="fc-errand-form">
+      <form class="fc-errand-form" id="fc-deduct-form">
         <label>Stars <input name="stars" type="number" min="1" max="1000000" required value="1"></label>
         <label>Reason <input name="reason" required maxlength="200"></label>
         <button type="submit">Deduct stars</button>
       </form>
     `);
-    const form = body.querySelector("form");
+    const redeem = body.querySelector("#fc-redeem-form");
+    redeem?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (await this._applyErrand("redeem_reward", {
+        person_id: person.id,
+        reward_id: redeem.querySelector('[name="reward"]').value,
+      })) this._closeModal();
+    });
+    const form = body.querySelector("#fc-deduct-form");
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (await this._applyErrand("deduct", {
@@ -1547,30 +1701,17 @@ class FamilyCalendarCard extends HTMLElement {
     return { markers: markers.slice(0, 2), remaining };
   }
 
-  _readableMarkerColor(color) {
-    const luminance = (value) => {
-      const match = /^#([0-9a-f]{6})$/i.exec(String(value));
-      if (!match) return null;
-      const [r, g, b] = [0, 2, 4].map((i) => parseInt(match[1].slice(i, i + 2), 16));
-      return 0.299 * r + 0.587 * g + 0.114 * b;
-    };
-    const iconLuminance = luminance(color);
-    if (iconLuminance === null) return "";
-    const dark = this._theme === "dark" || (this._theme === "system" && Boolean(this._hass.themes?.darkMode));
-    const paperLuminance = luminance(this._settings[`${dark ? "dark" : "light"}_day_color`]);
-    if (paperLuminance !== null && Math.abs(iconLuminance - paperLuminance) < 60) return "";
-    return color;
-  }
-
   _dayMarkersHtml(markers) {
     if (markers.length === 0) return "";
     let html = '<span class="fc-day-markers">';
     let i = 0;
     while (i < markers.length) {
       const mk = markers[i];
-      const color = this._readableMarkerColor(mk.color);
-      const style = color ? ` style="color:${color}"` : "";
-      html += `<ha-icon icon="${mk.icon}" class="fc-day-marker-icon"${style}></ha-icon>`;
+      const color = mk.color;
+      const validColor = typeof color === "string" && CSS.supports("color", color);
+      if (color && !validColor) console.error("Family Calendar: invalid day marker color", color);
+      const style = validColor ? ` style="color:${this._escapeAttr(color)}"` : "";
+      html += `<ha-icon icon="${this._escapeAttr(mk.icon)}" class="fc-day-marker-icon"${style}></ha-icon>`;
       i += 1;
     }
     html += "</span>";
@@ -1997,6 +2138,19 @@ FamilyCalendarCard.styles = `
     border-radius: 12px;
     background: var(--fc-paper);
   }
+  .fc-errand-stars-low, .fc-errand-stars-medium, .fc-errand-stars-high {
+    color: #1c2730;
+  }
+  .fc-errand-stars-low { background: #d7f3e1; }
+  .fc-errand-stars-medium { background: #d9ebff; }
+  .fc-errand-stars-high { background: #ffebbc; }
+  .fc-errand-content { display: flex; align-items: center; gap: 8px; }
+  .fc-errand-text { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 8px; overflow-wrap: anywhere; }
+  .fc-errand-icon { --mdc-icon-size: 48px; flex-shrink: 0; }
+  svg.fc-errand-icon { width: 48px; height: 48px; }
+  .fc-errand-icon-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fc-errand-icon-choice { display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 120px; }
+  .fc-errand-icon-choice[aria-pressed="true"] { outline: 3px solid var(--primary-color, #03a9f4); }
   .fc-errand-hint { color: var(--fc-ink-soft); }
   .fc-toggle--selected { outline: 3px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
   .fc-errand-form {
@@ -2209,10 +2363,11 @@ FamilyCalendarCard.styles = `
   }
   .fc-month-weekday-label {
     text-align: center;
-    font-size: 0.7em;
+    font-size: var(--fc-weekday-size, 16px);
     font-weight: 600;
     color: var(--fc-ink-soft);
-    padding-bottom: 4px;
+    background: var(--fc-header-background, transparent);
+    padding: 2px 0 4px;
   }
   .fc-month-cell {
     background: var(--fc-paper);
@@ -2286,6 +2441,7 @@ FamilyCalendarCard.styles = `
     justify-content: space-between;
     padding: 2px 4px 6px 4px;
     border-bottom: 1px solid var(--fc-hairline);
+    background: var(--fc-header-background, transparent);
   }
   .fc-day-header-left {
     display: flex;
@@ -2305,7 +2461,8 @@ FamilyCalendarCard.styles = `
     font-family: Georgia, 'Times New Roman', serif;
     font-variant: small-caps;
     letter-spacing: 0.08em;
-    font-size: 0.8em;
+    font-size: var(--fc-weekday-size, 16px);
+    line-height: 1.2;
     color: var(--fc-ink-soft);
   }
   .fc-daynum {

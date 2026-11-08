@@ -12,16 +12,19 @@ from custom_components.kdev_family_calendar.const import (
     CONF_CALENDARS,
     CONF_DARK_CARD_COLOR,
     CONF_DARK_DAY_COLOR,
+    CONF_DARK_HEADER_COLOR,
     CONF_DARK_TODAY_COLOR,
     CONF_END_HOUR,
     CONF_HOUR_HEIGHT,
     CONF_LAYOUT,
     CONF_LIGHT_CARD_COLOR,
     CONF_LIGHT_DAY_COLOR,
+    CONF_LIGHT_HEADER_COLOR,
     CONF_LIGHT_TODAY_COLOR,
     CONF_START_HOUR,
     CONF_THEME,
     CONF_VIEW,
+    CONF_WEEKDAY_FONT_SIZE,
 )
 from homeassistant.helpers import selector
 
@@ -97,6 +100,15 @@ def get_defaults_schema(defaults: Mapping[str, Any]) -> vol.Schema:
                     mode=selector.NumberSelectorMode.BOX,
                 ),
             ),
+            vol.Required(CONF_WEEKDAY_FONT_SIZE, default=defaults[CONF_WEEKDAY_FONT_SIZE]): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=12,
+                    max=24,
+                    step=1,
+                    unit_of_measurement="px",
+                    mode=selector.NumberSelectorMode.BOX,
+                ),
+            ),
             vol.Required(CONF_THEME, default=defaults[CONF_THEME]): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=["system", "light", "dark"],
@@ -107,6 +119,9 @@ def get_defaults_schema(defaults: Mapping[str, Any]) -> vol.Schema:
             vol.Required(
                 CONF_LIGHT_DAY_COLOR,
                 default=defaults[CONF_LIGHT_DAY_COLOR],
+            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.COLOR)),
+            vol.Optional(
+                CONF_LIGHT_HEADER_COLOR, description={"suggested_value": defaults[CONF_LIGHT_HEADER_COLOR]}
             ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.COLOR)),
             vol.Required(
                 CONF_LIGHT_TODAY_COLOR,
@@ -119,6 +134,9 @@ def get_defaults_schema(defaults: Mapping[str, Any]) -> vol.Schema:
             vol.Required(
                 CONF_DARK_DAY_COLOR,
                 default=defaults[CONF_DARK_DAY_COLOR],
+            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.COLOR)),
+            vol.Optional(
+                CONF_DARK_HEADER_COLOR, description={"suggested_value": defaults[CONF_DARK_HEADER_COLOR]}
             ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.COLOR)),
             vol.Required(
                 CONF_DARK_TODAY_COLOR,

@@ -197,7 +197,7 @@ async def _apply(hass: HomeAssistant, connection: ActiveConnection, msg: dict[st
         return (
             _can_read(connection, state)
             and _can_act(connection, entry, state)
-            and (msg["command"] in ("complete", "deduct") or _can_manage(connection, entry, state))
+            and (msg["command"] in ("complete", "deduct", "redeem_reward") or _can_manage(connection, entry, state))
         )
 
     try:

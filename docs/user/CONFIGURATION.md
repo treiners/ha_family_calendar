@@ -53,6 +53,10 @@ The visual card editor supports these options too. Leave an optional setting on 
 defaults and saved browser preferences. Large family buttons have a minimum touch height of 44 pixels; the default is
 the existing normal size. In the day marker editor, enabling an empty custom list hides integration default markers.
 
+In the integration's **Configure** dialog, set the weekday text size and optional light and dark header backgrounds.
+These settings apply to day and week headers and the month weekday row. Leave a header colour unset to keep the
+existing background.
+
 For `first_day: sunday` or `first_day: monday`, week view starts on that day in the week containing today or the
 date chosen in the date picker. The arrows move by whole weeks. The month grid starts on the same weekday; with
 `current_day`, it keeps its existing Monday start. Day, 3-day and fixed-length views still start on the chosen date.
@@ -64,10 +68,18 @@ Select a family button to show that person's errands and star balance. Hiding a 
 their calendar from the integration, keeps their tasks and history. Use **People** to show them again or link a
 previously removed person to a selected calendar.
 
+Managers can use **Rewards** to create, edit or delete shared rewards with a name and a star cost. Under **Use stars**,
+select a reward and confirm it, or enter a one-off reason and amount. A saved reward uses its configured price, and
+past history keeps the original name and cost even if the reward is later edited or deleted.
+
 Use **Add errand** to create a one-off or repeating task for one or more people. The **Library** stores reusable
 ideas; assigning one creates a separate task. An optional due date does not remove a one-off task when it passes.
+Choose an optional icon when creating or editing an errand or library item. Assignments from the library start with
+the library item's icon. Choose from Home Assistant's icons or the built-in family illustrations; select an
+illustration again to clear it. Existing errands without an icon show a default icon.
 Unfinished repeating tasks are replaced at the next scheduled occurrence in Home Assistant's time zone.
 Completions waiting for confirmation remain available.
+Errand tiles are green for 1–2 stars, blue for 3–4 stars and yellow for 5 or more stars; the star value remains visible.
 
 Each person's **Require confirmation** setting determines whether completing an errand awards stars immediately or
 waits for confirmation. Home Assistant administrators can manage and confirm errands. To grant other logins access,
@@ -95,7 +107,8 @@ icon_keywords:
 ### Day markers
 
 An event whose title contains a keyword is shown as an icon in the day header instead of in the event list. At most
-two icons are shown per day, and identical icon and color pairs are shown once.
+two icons are shown per day, and identical icon and color pairs are shown once. A configured CSS color is used as
+chosen, so select one that remains visible against your day background.
 
 ```yaml
 day_markers:

@@ -10,7 +10,10 @@ from custom_components.kdev_family_calendar.const import (
     CONF_CALENDAR_SETTINGS,
     CONF_CALENDAR_TEXT_COLOR,
     CONF_CALENDARS,
+    CONF_DARK_HEADER_COLOR,
     CONF_ERRAND_MANAGERS,
+    CONF_LIGHT_HEADER_COLOR,
+    CONF_WEEKDAY_FONT_SIZE,
     DEFAULT_SETTINGS,
     DOMAIN,
 )
@@ -92,6 +95,9 @@ async def test_options_flow_updates_calendar_settings(
         {
             **DEFAULT_SETTINGS,
             CONF_CALENDARS: ["calendar.mock_calendar"],
+            CONF_WEEKDAY_FONT_SIZE: 20,
+            CONF_LIGHT_HEADER_COLOR: "#aabbcc",
+            CONF_DARK_HEADER_COLOR: "#123456",
         },
     )
     assert result["step_id"] == "calendar_settings"
@@ -113,6 +119,9 @@ async def test_options_flow_updates_calendar_settings(
 
     assert result["type"] == "create_entry"
     assert result["data"]["day_markers"][0]["keyword"] == "redbin"
+    assert result["data"][CONF_WEEKDAY_FONT_SIZE] == 20
+    assert result["data"][CONF_LIGHT_HEADER_COLOR] == "#aabbcc"
+    assert result["data"][CONF_DARK_HEADER_COLOR] == "#123456"
     assert result["data"][CONF_CALENDAR_SETTINGS]["calendar.mock_calendar"] == {
         CONF_CALENDAR_NAME: "Updated",
         CONF_CALENDAR_COLOR: "#654321",

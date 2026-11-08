@@ -20,7 +20,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .errands_model import apply_command, reconcile, validate_schedule
+from .errands_model import ICON, apply_command, reconcile, validate_schedule
 
 _PERSON_SCHEMA = vol.Schema(
     {
@@ -32,7 +32,12 @@ _PERSON_SCHEMA = vol.Schema(
     }
 )
 _TEMPLATE_SCHEMA = vol.Schema(
-    {vol.Required("id"): str, vol.Required("name"): str, vol.Required("stars"): vol.All(int, vol.Range(min=1))}
+    {
+        vol.Required("id"): str,
+        vol.Required("name"): str,
+        vol.Required("stars"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("icon"): ICON,
+    }
 )
 _ASSIGNMENT_SCHEMA = vol.Schema(
     {
@@ -40,6 +45,7 @@ _ASSIGNMENT_SCHEMA = vol.Schema(
         vol.Required("person_id"): str,
         vol.Required("name"): str,
         vol.Required("stars"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("icon"): ICON,
         vol.Required("schedule"): {
             vol.Required("kind"): vol.In(("once", "daily", "weekly")),
             vol.Required("weekdays"): [vol.All(int, vol.Range(min=0, max=6))],
@@ -56,6 +62,7 @@ _OCCURRENCE_SCHEMA = vol.Schema(
         vol.Required("person_id"): str,
         vol.Required("name"): str,
         vol.Required("stars"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("icon"): ICON,
         vol.Required("day"): vol.Any(None, str),
         vol.Required("status"): vol.In(("open", "pending", "completed", "missed", "cancelled")),
     }
@@ -76,6 +83,15 @@ _STATE_SCHEMA = vol.Schema(
         vol.Required("revision"): vol.All(int, vol.Range(min=0)),
         vol.Required("people"): [_PERSON_SCHEMA],
         vol.Optional("templates", default=list): [_TEMPLATE_SCHEMA],
+        vol.Optional("rewards", default=list): [
+            vol.Schema(
+                {
+                    vol.Required("id"): str,
+                    vol.Required("name"): str,
+                    vol.Required("stars"): vol.All(int, vol.Range(min=1)),
+                }
+            )
+        ],
         vol.Optional("assignments", default=list): [_ASSIGNMENT_SCHEMA],
         vol.Optional("occurrences", default=list): [_OCCURRENCE_SCHEMA],
         vol.Optional("transactions", default=list): [_TRANSACTION_SCHEMA],
@@ -98,6 +114,7 @@ class KdevFamilyCalendarErrandsStore:
             "revision": 0,
             "people": [],
             "templates": [],
+            "rewards": [],
             "assignments": [],
             "occurrences": [],
             "transactions": [],
@@ -120,7 +137,7 @@ class KdevFamilyCalendarErrandsStore:
         people = self._state["people"]
         if len({person["id"] for person in people}) != len(people):
             raise ValueError("Errands storage contains duplicate person IDs.")
-        for collection in ("templates", "assignments", "occurrences", "transactions"):
+        for collection in ("templates", "rewards", "assignments", "occurrences", "transactions"):
             records = self._state[collection]
             if len({item["id"] for item in records}) != len(records):
                 raise ValueError(f"Errands storage contains duplicate {collection} IDs.")

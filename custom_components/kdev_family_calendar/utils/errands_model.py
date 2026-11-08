@@ -6,10 +6,13 @@ from uuid import uuid4
 
 import voluptuous as vol
 
+from homeassistant.helpers import config_validation as cv
+
 _NAME = vol.All(str, vol.Strip, vol.Length(min=1, max=200))
 _ID = vol.All(str, vol.Length(min=1, max=64))
 _STARS = vol.All(int, vol.Range(min=1, max=1000000))
 _DATE = vol.Any(None, vol.All(str, vol.Match(r"^\d{4}-\d{2}-\d{2}$")))
+ICON = vol.Any(None, vol.All(str, vol.Length(min=3, max=255), cv.icon))
 _SCHEDULE = vol.Schema(
     {
         vol.Required("kind"): vol.In(("once", "daily", "weekly")),
@@ -19,11 +22,15 @@ _SCHEDULE = vol.Schema(
 _TASK_FIELDS = {
     vol.Required("name"): _NAME,
     vol.Required("stars"): _STARS,
+    vol.Optional("icon"): ICON,
 }
 
 COMMAND_SCHEMAS = {
     "save_template": vol.Schema({vol.Optional("id"): _ID, **_TASK_FIELDS}),
     "delete_template": vol.Schema({vol.Required("id"): _ID}),
+    "save_reward": vol.Schema({vol.Optional("id"): _ID, vol.Required("name"): _NAME, vol.Required("stars"): _STARS}),
+    "delete_reward": vol.Schema({vol.Required("id"): _ID}),
+    "redeem_reward": vol.Schema({vol.Required("person_id"): _ID, vol.Required("reward_id"): _ID}),
     "assign": vol.Schema(
         {
             **_TASK_FIELDS,
@@ -94,6 +101,7 @@ def _occurrence(assignment: dict[str, Any], day: str | None) -> dict[str, Any]:
         "person_id": assignment["person_id"],
         "name": assignment["name"],
         "stars": assignment["stars"],
+        "icon": assignment.get("icon"),
         "day": day,
         "status": "open",
     }
@@ -148,18 +156,41 @@ def _update_completion(state: dict[str, Any], command: str, item_id: str, today:
         _transaction(state, item["person_id"], item["stars"], "award", item["id"], item["name"], now)
 
 
+def _apply_reward(state: dict[str, Any], command: str, args: dict[str, Any], now: str) -> None:
+    if command == "save_reward":
+        reward = _find(state["rewards"], args["id"]) if "id" in args else {"id": uuid4().hex}
+        reward.update(name=args["name"], stars=args["stars"])
+        if "id" not in args:
+            state["rewards"].append(reward)
+    elif command == "delete_reward":
+        state["rewards"].remove(_find(state["rewards"], args["id"]))
+    else:
+        _find(state["people"], args["person_id"])
+        reward = _find(state["rewards"], args["reward_id"])
+        _transaction(state, args["person_id"], -reward["stars"], "deduction", "", reward["name"], now)
+
+
+def _apply_template(state: dict[str, Any], command: str, args: dict[str, Any]) -> None:
+    if command == "delete_template":
+        state["templates"].remove(_find(state["templates"], args["id"]))
+        return
+    template = _find(state["templates"], args["id"]) if "id" in args else {"id": uuid4().hex}
+    template.update(name=args["name"], stars=args["stars"])
+    if "icon" in args:
+        template["icon"] = args["icon"]
+    if "id" not in args:
+        state["templates"].append(template)
+
+
 def apply_command(state: dict[str, Any], command: str, raw: dict[str, Any], today: date, now: str) -> None:
     """Validate and apply one operation to an isolated state copy."""
     if command not in COMMAND_SCHEMAS:
         raise ValueError("Unknown errands operation.")
     args: dict[str, Any] = cast("dict[str, Any]", COMMAND_SCHEMAS[command](raw))
-    if command == "save_template":
-        template = _find(state["templates"], args["id"]) if "id" in args else {"id": uuid4().hex}
-        template.update(name=args["name"], stars=args["stars"])
-        if "id" not in args:
-            state["templates"].append(template)
-    elif command == "delete_template":
-        state["templates"].remove(_find(state["templates"], args["id"]))
+    if command in ("save_template", "delete_template"):
+        _apply_template(state, command, args)
+    elif command in ("save_reward", "delete_reward", "redeem_reward"):
+        _apply_reward(state, command, args, now)
     elif command == "assign":
         validate_schedule(args["schedule"], args["due_date"])
         if len(set(args["person_ids"])) != len(args["person_ids"]):
@@ -171,6 +202,7 @@ def apply_command(state: dict[str, Any], command: str, raw: dict[str, Any], toda
                 "person_id": person_id,
                 "name": args["name"],
                 "stars": args["stars"],
+                "icon": args.get("icon"),
                 "schedule": args["schedule"],
                 "due_date": args["due_date"],
                 "start_date": today.isoformat(),
@@ -200,9 +232,13 @@ def apply_command(state: dict[str, Any], command: str, raw: dict[str, Any], toda
                 due_date=args["due_date"],
                 start_date=today.isoformat(),
             )
+            if "icon" in args:
+                assignment["icon"] = args["icon"]
             for item in state["occurrences"]:
                 if item["assignment_id"] == assignment["id"] and item["status"] == "open":
                     item.update(name=args["name"], stars=args["stars"])
+                    if "icon" in args:
+                        item["icon"] = args["icon"]
                     if args["schedule"]["kind"] == "once":
                         item["day"] = args["due_date"]
             reconcile(state, today)

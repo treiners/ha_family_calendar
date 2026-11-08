@@ -123,3 +123,23 @@ test("day, three-day and fixed-length views retain the selected date", () => {
 test("invalid first-day values report a configuration error", () => {
   assert.throws(() => createCard({ first_day: "tuesday" }), /first_day must be/);
 });
+
+test("header appearance uses selected theme and falls back for older settings", () => {
+  const card = createCard();
+  const properties = new Map();
+  card._built = true;
+  card._root.querySelector = () => ({ style: { setProperty: (key, value) => properties.set(key, value) } });
+  card._hass = { themes: { darkMode: false } };
+  card._settings = { weekday_font_size: 20, light_header_color: "#abcdef", dark_header_color: "#123456" };
+  card._theme = "light";
+  card._applyTheme();
+  assert.equal(properties.get("--fc-weekday-size"), "20px");
+  assert.equal(properties.get("--fc-header-background"), "#abcdef");
+  card._theme = "dark";
+  card._applyTheme();
+  assert.equal(properties.get("--fc-header-background"), "#123456");
+  card._settings = {};
+  card._applyTheme();
+  assert.equal(properties.get("--fc-weekday-size"), "16px");
+  assert.equal(properties.get("--fc-header-background"), "transparent");
+});

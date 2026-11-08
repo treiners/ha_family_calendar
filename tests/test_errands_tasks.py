@@ -84,6 +84,156 @@ async def test_task_approval_deductions_and_corrections(
     assert (await _call(ws, init_integration, "get"))["result"] == state
 
 
+async def test_errand_icons_persist_and_follow_open_occurrences(
+    hass: HomeAssistant, init_integration: MockConfigEntry, hass_ws_client: WebSocketGenerator
+) -> None:
+    """Keep icons through assignment, edits, completion and reload."""
+    ws = await hass_ws_client()
+    state = (
+        await _call(
+            ws,
+            init_integration,
+            "set_person",
+            calendar_entity="calendar.mock_calendar",
+            approval_required=True,
+            revision=0,
+        )
+    )["result"]
+    person = state["people"][0]["id"]
+    state = await _apply(
+        ws, init_integration, state, "save_template", name="Pet", stars=2, icon="family_calendar:room_cleanup"
+    )
+    template = state["templates"][0]
+    state = await _apply(
+        ws,
+        init_integration,
+        state,
+        "assign",
+        name=template["name"],
+        stars=template["stars"],
+        icon=template["icon"],
+        person_ids=[person],
+        schedule={"kind": "once", "weekdays": []},
+    )
+    assignment = state["assignments"][0]["id"]
+    occurrence = state["occurrences"][0]["id"]
+    assert state["occurrences"][0]["icon"] == "family_calendar:room_cleanup"
+    state = await _apply(
+        ws,
+        init_integration,
+        state,
+        "edit_assignment",
+        id=assignment,
+        name="Pet",
+        stars=2,
+        icon="mdi:dog",
+        schedule={"kind": "once", "weekdays": []},
+    )
+    assert state["occurrences"][0]["icon"] == "mdi:dog"
+    state = await _apply(
+        ws,
+        init_integration,
+        state,
+        "edit_assignment",
+        id=assignment,
+        name="Pet",
+        stars=2,
+        schedule={"kind": "once", "weekdays": []},
+    )
+    assert state["assignments"][0]["icon"] == "mdi:dog"
+    assert state["occurrences"][0]["icon"] == "mdi:dog"
+    state = await _apply(ws, init_integration, state, "complete", id=occurrence)
+    state = await _apply(
+        ws,
+        init_integration,
+        state,
+        "edit_assignment",
+        id=assignment,
+        name="Pet",
+        stars=2,
+        icon=None,
+        schedule={"kind": "once", "weekdays": []},
+    )
+    assert state["occurrences"][0]["icon"] == "mdi:dog"
+    assert state["assignments"][0]["icon"] is None
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    assert await hass.config_entries.async_setup(init_integration.entry_id)
+    assert (await _call(ws, init_integration, "get"))["result"] == state
+    invalid = await _call(
+        ws,
+        init_integration,
+        "apply",
+        command="save_template",
+        args={"name": "Bad", "stars": 1, "icon": "bad"},
+        revision=state["revision"],
+        operation_id=uuid4().hex,
+    )
+    assert invalid["error"]["code"] == "errands_conflict"
+
+
+async def test_rewards_are_shared_fixed_and_history_survives_edits(
+    hass: HomeAssistant, init_integration: MockConfigEntry, hass_ws_client: WebSocketGenerator
+) -> None:
+    """Reward redemption uses the saved price, preserves history, and survives reload."""
+    ws = await hass_ws_client()
+    state = (
+        await _call(
+            ws,
+            init_integration,
+            "set_person",
+            calendar_entity="calendar.mock_calendar",
+            approval_required=False,
+            revision=0,
+        )
+    )["result"]
+    person = state["people"][0]["id"]
+    state = await _apply(ws, init_integration, state, "save_reward", name="30 min TV", stars=5)
+    reward_id = state["rewards"][0]["id"]
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    assert await hass.config_entries.async_setup(init_integration.entry_id)
+    assert (await _call(ws, init_integration, "get"))["result"] == state
+    stale_revision = state["revision"]
+    state = await _apply(ws, init_integration, state, "save_reward", id=reward_id, name="New book", stars=8)
+    stale = await _call(
+        ws,
+        init_integration,
+        "apply",
+        command="redeem_reward",
+        args={"person_id": person, "reward_id": reward_id},
+        revision=stale_revision,
+        operation_id=uuid4().hex,
+    )
+    assert stale["error"]["code"] == "errands_conflict"
+    tampered = await _call(
+        ws,
+        init_integration,
+        "apply",
+        command="redeem_reward",
+        args={"person_id": person, "reward_id": reward_id, "stars": 1},
+        revision=state["revision"],
+        operation_id=uuid4().hex,
+    )
+    assert not tampered["success"]
+    request = {
+        "command": "redeem_reward",
+        "args": {"person_id": person, "reward_id": reward_id},
+        "revision": state["revision"],
+        "operation_id": uuid4().hex,
+    }
+    state = (await _call(ws, init_integration, "apply", **request))["result"]
+    assert (await _call(ws, init_integration, "apply", **request))["result"] == state
+    transaction = state["transactions"][0]
+    assert (transaction["reason"], transaction["amount"]) == ("New book", -8)
+    state = await _apply(ws, init_integration, state, "delete_reward", id=reward_id)
+    assert state["rewards"] == []
+    assert state["transactions"][0] == transaction
+    state = await _apply(ws, init_integration, state, "undo_deduction", id=transaction["id"])
+    assert sum(item["amount"] for item in state["transactions"]) == 0
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    assert await hass.config_entries.async_setup(init_integration.entry_id)
+    assert (await _call(ws, init_integration, "get"))["result"] == state
+
+
 async def test_deduction_retry_is_idempotent(
     init_integration: MockConfigEntry, hass_ws_client: WebSocketGenerator
 ) -> None:
@@ -241,6 +391,8 @@ async def test_manager_and_family_member_permissions(
         "undo_completion",
         "save_template",
         "delete_template",
+        "save_reward",
+        "delete_reward",
         "assign",
         "edit_assignment",
         "delete_assignment",
@@ -268,8 +420,12 @@ async def test_manager_and_family_member_permissions(
     state = await _apply(child_ws, config_entry, state, "complete", id=task)
     assert state["occurrences"][0]["status"] == "pending"
     state = await _apply(manager_ws, config_entry, state, "approve", id=task)
+    state = await _apply(manager_ws, config_entry, state, "save_reward", name="TV", stars=3)
+    state = await _apply(
+        child_ws, config_entry, state, "redeem_reward", person_id=person, reward_id=state["rewards"][0]["id"]
+    )
     state = await _apply(child_ws, config_entry, state, "deduct", person_id=person, stars=1, reason="Reward")
-    assert sum(item["amount"] for item in state["transactions"]) == 1
+    assert sum(item["amount"] for item in state["transactions"]) == -2
     hass.config_entries.async_update_entry(config_entry, options={**config_entry.options, CONF_ERRAND_MANAGERS: []})
     await hass.async_block_till_done()
     denied = await _call(
