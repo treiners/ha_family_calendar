@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/treiners/ha_family_calendar/compare/v0.1.3...v0.1.4) (2026-11-06)
+
+
+### Features
+
+* **card:** add errands view and card editor options ([63dd6e9](https://github.com/treiners/ha_family_calendar/commit/63dd6e9aa9fc5659e62abd7f8bad05d7264e7612))
+* **errands:** add shared errands and star balances ([942920e](https://github.com/treiners/ha_family_calendar/commit/942920e2f2dd435d5b48c7a7c4dd214706a34b1e))
+
 ## [0.1.3](https://github.com/treiners/ha_family_calendar/compare/v0.1.2...v0.1.3) (2026-10-07)
 
 
