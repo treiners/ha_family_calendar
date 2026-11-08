@@ -5,10 +5,12 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
+from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser, async_fire_time_changed
 from pytest_homeassistant_custom_component.typing import MockHAClientWebSocket, WebSocketGenerator
 
-from custom_components.kdev_family_calendar.const import CONF_CALENDARS, DOMAIN
+from custom_components.kdev_family_calendar.const import CONF_CALENDARS, CONF_ERRAND_MANAGERS, DOMAIN
+from homeassistant.auth.const import GROUP_ID_USER
+from homeassistant.auth.models import Credentials
 from homeassistant.core import HomeAssistant
 
 # Home Assistant's HTTP middleware assigns a string key to aiohttp's request.
@@ -168,6 +170,118 @@ async def test_read_only_cannot_modify_tasks(
     )
     assert result["error"]["code"] == "unauthorized"
     assert not (await _call(admin, init_integration, "get"))["result"]["transactions"]
+
+
+async def test_manager_and_family_member_permissions(
+    hass: HomeAssistant, config_entry: MockConfigEntry, hass_ws_client: WebSocketGenerator
+) -> None:
+    """Enforce manager permissions even when clients send direct requests."""
+    group = await hass.auth.async_get_group(GROUP_ID_USER)
+    manager = MockUser(name="Manager", groups=[group]).add_to_hass(hass)
+    child = MockUser(name="Child", groups=[group]).add_to_hass(hass)
+
+    async def client_for(user: MockUser) -> MockHAClientWebSocket:
+        credential = Credentials(
+            id=uuid4().hex,
+            auth_provider_type="homeassistant",
+            auth_provider_id=None,
+            data={"username": user.name},
+            is_new=False,
+        )
+        user.credentials.append(credential)
+        refresh = await hass.auth.async_create_refresh_token(user, "http://example.com", credential=credential)
+        return await hass_ws_client(access_token=hass.auth.async_create_access_token(refresh))
+
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        config_entry, options={**config_entry.options, CONF_ERRAND_MANAGERS: [manager.id]}
+    )
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    sensor = hass.states.get("sensor.family_calendar_configuration")
+    assert sensor is not None
+    assert CONF_ERRAND_MANAGERS not in sensor.attributes["defaults"]
+    admin = await hass_ws_client()
+    manager_ws = await client_for(manager)
+    child_ws = await client_for(child)
+    state = (
+        await _call(
+            admin,
+            config_entry,
+            "set_person",
+            calendar_entity="calendar.mock_calendar",
+            approval_required=True,
+            revision=0,
+        )
+    )["result"]
+    person = state["people"][0]["id"]
+    state = await _apply(
+        manager_ws,
+        config_entry,
+        state,
+        "assign",
+        name="Tidy",
+        stars=2,
+        person_ids=[person],
+        schedule={"kind": "once", "weekdays": []},
+    )
+    task = state["occurrences"][0]["id"]
+    for ws, expected in ((manager_ws, True), (child_ws, False)):
+        await ws.send_json_auto_id({"type": f"{DOMAIN}/errands/subscribe", "entry_id": config_entry.entry_id})
+        result = await ws.receive_json()
+        assert result["success"]
+        event = (await ws.receive_json())["event"]
+        assert event["can_manage"] is expected
+        assert event["can_act"] is True
+        await ws.send_json_auto_id({"type": "unsubscribe_events", "subscription": result["id"]})
+        assert (await ws.receive_json())["success"]
+
+    for command in (
+        "approve",
+        "undo_completion",
+        "save_template",
+        "delete_template",
+        "assign",
+        "edit_assignment",
+        "delete_assignment",
+        "undo_deduction",
+    ):
+        denied = await _call(
+            child_ws,
+            config_entry,
+            "apply",
+            command=command,
+            args={"id": task},
+            revision=state["revision"],
+            operation_id=uuid4().hex,
+        )
+        assert denied["error"]["code"] == "unauthorized"
+    denied = await _call(
+        child_ws,
+        config_entry,
+        "set_person",
+        calendar_entity="calendar.mock_calendar",
+        approval_required=False,
+        revision=state["revision"],
+    )
+    assert denied["error"]["code"] == "unauthorized"
+    state = await _apply(child_ws, config_entry, state, "complete", id=task)
+    assert state["occurrences"][0]["status"] == "pending"
+    state = await _apply(manager_ws, config_entry, state, "approve", id=task)
+    state = await _apply(child_ws, config_entry, state, "deduct", person_id=person, stars=1, reason="Reward")
+    assert sum(item["amount"] for item in state["transactions"]) == 1
+    hass.config_entries.async_update_entry(config_entry, options={**config_entry.options, CONF_ERRAND_MANAGERS: []})
+    await hass.async_block_till_done()
+    denied = await _call(
+        manager_ws,
+        config_entry,
+        "apply",
+        command="undo_completion",
+        args={"id": task},
+        revision=state["revision"],
+        operation_id=uuid4().hex,
+    )
+    assert denied["error"]["code"] == "unauthorized"
 
 
 async def test_multiple_people_receive_independent_tasks(

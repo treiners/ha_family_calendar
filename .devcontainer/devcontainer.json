@@ -251,7 +251,8 @@
     "source=${localWorkspaceFolderBasename}_codex_home,target=/home/vscode/.codex,type=volume",
     // Mount host gitconfig for local development (ignored in Codespaces)
     // In Codespaces, GitHub automatically configures Git with your account
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig.host,type=bind,consistency=cached,readonly"
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig.host,type=bind,consistency=cached,readonly",
+    "source=/Users/236268i/homeassistant_config,target=/workspaces/external_folder,type=bind"
   ],
   "remoteUser": "vscode"
 }

@@ -52,6 +52,8 @@ function setup() {
   card._calendarList = [{ entity_id: "calendar.family", name: "Family", color: "#123456" }];
   card._hiddenList = [];
   card._calendarFeatures = () => 0;
+  card._errandsCanManage = true;
+  card._errandsCanAct = true;
   return { card, controls };
 }
 
@@ -82,7 +84,7 @@ test("shared subscriptions update two cards and are cleaned up independently", a
   };
   first._hass = second._hass = hass;
   await Promise.all([first._ensureErrands("sensor.family"), second._ensureErrands("sensor.family")]);
-  callbacks.forEach((callback) => callback({ available: true, data: snapshot() }));
+  callbacks.forEach((callback) => callback({ available: true, data: snapshot(), can_manage: true, can_act: true }));
   assert.equal(first._errandsState.revision, 1);
   assert.equal(second._errandsState.occurrences[0].name, "Feed pet");
   first.disconnectedCallback();
@@ -90,7 +92,7 @@ test("shared subscriptions update two cards and are cleaned up independently", a
   const updated = snapshot();
   updated.revision = 2;
   updated.occurrences[0].status = "pending";
-  callbacks.forEach((callback) => callback({ available: true, data: updated }));
+  callbacks.forEach((callback) => callback({ available: true, data: updated, can_manage: true, can_act: true }));
   assert.equal(first._errandsState.revision, 1);
   assert.equal(second._errandsState.occurrences[0].status, "pending");
   second.disconnectedCallback();
@@ -211,4 +213,23 @@ test("hiding a person removes their tiles and star label without deleting the da
   assert.doesNotMatch(controls.get("#fc-toggles").innerHTML, /3 stars/);
   assert.equal(state.occurrences.length, 1);
   assert.equal(state.transactions[0].amount, 3);
+});
+
+test("non-managers can complete and spend but cannot manage or confirm", () => {
+  const { card, controls } = setup();
+  const state = snapshot();
+  state.occurrences.push({ ...state.occurrences[0], id: "o2", status: "pending" });
+  card._errandsState = state;
+  card._errandsCanManage = false;
+  card._errandsView = true;
+  card._renderErrands();
+  const html = controls.get("#fc-errands").innerHTML;
+  assert.match(html, /data-action="complete"/);
+  assert.match(html, /data-action="deduct"/);
+  for (const action of ["people", "library", "add", "manage", "history", "approve", "undo_completion", "edit"]) {
+    assert.doesNotMatch(html, new RegExp(`data-action="${action}"`));
+  }
+  card._errandsCanAct = false;
+  card._renderErrands();
+  assert.doesNotMatch(controls.get("#fc-errands").innerHTML, /data-action="(?:complete|deduct)"/);
 });

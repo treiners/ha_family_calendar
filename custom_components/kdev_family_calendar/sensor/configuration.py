@@ -8,6 +8,7 @@ from custom_components.kdev_family_calendar.const import (
     CONF_CALENDAR_SETTINGS,
     CONF_CALENDAR_TEXT_COLOR,
     CONF_CALENDARS,
+    CONF_ERRAND_MANAGERS,
     DEFAULT_CALENDAR_COLORS,
     DEFAULT_CALENDAR_TEXT_COLOR,
     DEFAULT_SETTINGS,
@@ -62,6 +63,8 @@ class KdevFamilyCalendarConfigurationSensor(SensorEntity, KdevFamilyCalendarEnti
         return {
             "calendars": calendars,
             "defaults": {
-                key: value for key, value in defaults.items() if key not in (CONF_CALENDARS, CONF_CALENDAR_SETTINGS)
+                key: value
+                for key, value in defaults.items()
+                if key not in (CONF_CALENDARS, CONF_CALENDAR_SETTINGS, CONF_ERRAND_MANAGERS)
             },
         }

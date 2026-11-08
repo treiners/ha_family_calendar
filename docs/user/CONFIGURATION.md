@@ -70,8 +70,11 @@ Unfinished repeating tasks are replaced at the next scheduled occurrence in Home
 Completions waiting for confirmation remain available.
 
 Each person's **Require confirmation** setting determines whether completing an errand awards stars immediately or
-waits for confirmation. Confirmation is not locked: anyone with permission to control the shared errands can use it.
-Use **Use stars** to record a reward, and **History** to correct a completion or deduction. A balance can be negative.
+waits for confirmation. Home Assistant administrators can manage and confirm errands. To grant other logins access,
+select them under **Additional errand managers** in the Family Calendar integration settings. All users must still
+have permission to read the family calendars. Users with permission to control all family calendars can complete
+errands and use stars for any family member. Read-only users cannot make changes. Managers also need calendar-control
+permission and can use **History** to correct a completion or deduction. A balance can be negative.
 Changes are shared between cards and stored by Home Assistant; include its configuration storage in your backups.
 
 If a save fails, retry the same request or use **Refresh and dismiss** to check the latest shared state before making

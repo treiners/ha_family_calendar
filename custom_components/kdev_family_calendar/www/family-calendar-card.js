@@ -46,6 +46,8 @@ class FamilyCalendarCard extends HTMLElement {
     this._errandsGeneration = 0;
     this._errandsUnsubscribe = null;
     this._errandsState = null;
+    this._errandsCanManage = false;
+    this._errandsCanAct = false;
     this._errandsView = false;
     this._errandsBusy = false;
   }
@@ -76,6 +78,8 @@ class FamilyCalendarCard extends HTMLElement {
     this._subscriptionError = "";
     this._errandsError = "";
     this._errandsState = null;
+    this._errandsCanManage = false;
+    this._errandsCanAct = false;
     this._errandsView = false;
     this._errandsPerson = null;
     this._errandsPending = null;
@@ -156,6 +160,8 @@ class FamilyCalendarCard extends HTMLElement {
     this._errandsKey = null;
     this._errandsEntry = null;
     this._errandsConnection = null;
+    this._errandsCanManage = false;
+    this._errandsCanAct = false;
   }
 
   async _ensureErrands(sensor) {
@@ -178,6 +184,8 @@ class FamilyCalendarCard extends HTMLElement {
         (message) => {
           if (generation !== this._errandsGeneration) return;
           if (!message.available) {
+            this._errandsCanManage = false;
+            this._errandsCanAct = false;
             this._errandsState = null;
             this._errandsError = message.error === "unauthorized"
               ? "You do not have permission to view all family errands."
@@ -191,6 +199,8 @@ class FamilyCalendarCard extends HTMLElement {
             return;
           }
           this._errandsError = "";
+          this._errandsCanManage = message.can_manage === true;
+          this._errandsCanAct = message.can_act === true;
           this._setErrandsState(message.data);
         },
         { type: "kdev_family_calendar/errands/subscribe", entry_id: registry.config_entry_id }
@@ -1026,14 +1036,14 @@ class FamilyCalendarCard extends HTMLElement {
       ${!state ? `<p>${this._errandsError ? "Waiting for errands to become available." : "Loading errands…"}</p>` : `
         <div class="fc-errand-toolbar">
           <strong>${person ? `${this._escape(calendar?.name)} · ★ ${balance}` : "Family errands"}</strong>
-          <button type="button" data-action="people" ${disabled}>People</button>
-          <button type="button" data-action="library" ${disabled}>Library</button>
-          ${person ? `<button type="button" data-action="add" ${disabled}>Add errand</button>
-            <button type="button" data-action="manage" ${disabled}>Manage</button>
-            <button type="button" data-action="deduct" ${disabled}>Use stars</button>
-            <button type="button" data-action="history" ${disabled}>History</button>` : ""}
+          ${this._errandsCanManage ? `<button type="button" data-action="people" ${disabled}>People</button>
+          <button type="button" data-action="library" ${disabled}>Library</button>` : ""}
+          ${person ? `${this._errandsCanManage ? `<button type="button" data-action="add" ${disabled}>Add errand</button>
+            <button type="button" data-action="manage" ${disabled}>Manage</button>` : ""}
+            ${this._errandsCanAct ? `<button type="button" data-action="deduct" ${disabled}>Use stars</button>` : ""}
+            ${this._errandsCanManage ? `<button type="button" data-action="history" ${disabled}>History</button>` : ""}` : ""}
         </div>
-        ${!person ? `<p>Choose which calendars represent people using the People button.</p>` : `
+        ${!person ? `<p>${this._errandsCanManage ? "Choose which calendars represent people using the People button." : "No family members are available for errands."}</p>` : `
           <p class="fc-errand-hint">${person.approval_required ? "Completed errands need confirmation." : "Stars are awarded immediately."}</p>
           <div class="fc-errand-grid">
             ${active.length ? active.map((item) => `
@@ -1043,10 +1053,10 @@ class FamilyCalendarCard extends HTMLElement {
                 <span>${item.status === "pending" ? "Waiting for confirmation" : "Ready to do"}</span>
                 <div class="fc-errand-actions">
                   ${item.status === "open"
-                    ? `<button type="button" data-action="complete" data-id="${this._escapeAttr(item.id)}" ${disabled}>Done</button>`
-                    : `<button type="button" data-action="approve" data-id="${this._escapeAttr(item.id)}" ${disabled}>Confirm</button>
-                       <button type="button" data-action="undo_completion" data-id="${this._escapeAttr(item.id)}" ${disabled}>Undo</button>`}
-                  ${state.assignments.find((assignment) => assignment.id === item.assignment_id)?.active
+                    ? this._errandsCanAct ? `<button type="button" data-action="complete" data-id="${this._escapeAttr(item.id)}" ${disabled}>Done</button>` : ""
+                    : this._errandsCanManage ? `<button type="button" data-action="approve" data-id="${this._escapeAttr(item.id)}" ${disabled}>Confirm</button>
+                       <button type="button" data-action="undo_completion" data-id="${this._escapeAttr(item.id)}" ${disabled}>Undo</button>` : ""}
+                  ${this._errandsCanManage && state.assignments.find((assignment) => assignment.id === item.assignment_id)?.active
                     ? `<button type="button" data-action="edit" data-id="${this._escapeAttr(item.assignment_id)}" ${disabled}>Edit</button>` : ""}
                 </div>
               </article>`).join("") : "<p>No errands to do.</p>"}

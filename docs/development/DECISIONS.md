@@ -139,6 +139,23 @@ Serialize writes and use revisions to reject stale changes. Verify saved data be
 
 ---
 
+### Restrict errand management by login
+
+**Date:** 2026-11-08
+
+**Context:** The unlocked parent workflow allowed anyone with calendar-control permissions to confirm or manage errands.
+
+**Decision:** Administrators and selected Home Assistant logins can manage errands. Other users with calendar-control
+permissions can complete errands and spend stars. Calendar-read and control permissions still apply.
+
+**Rationale:** Enforce management access on the server while retaining shared-device use and Home Assistant's
+read-only restrictions.
+
+**Consequences:** Existing non-administrator managers need to be selected in the integration settings. Permissions
+apply to all family members rather than linking logins to individual people.
+
+---
+
 ## Future Considerations
 
 ### State Restoration

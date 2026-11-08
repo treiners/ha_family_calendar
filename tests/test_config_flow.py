@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
 
 from custom_components.kdev_family_calendar.const import (
     CONF_CALENDAR_COLOR,
@@ -10,6 +10,7 @@ from custom_components.kdev_family_calendar.const import (
     CONF_CALENDAR_SETTINGS,
     CONF_CALENDAR_TEXT_COLOR,
     CONF_CALENDARS,
+    CONF_ERRAND_MANAGERS,
     DEFAULT_SETTINGS,
     DOMAIN,
 )
@@ -117,3 +118,20 @@ async def test_options_flow_updates_calendar_settings(
         CONF_CALENDAR_COLOR: "#654321",
         CONF_CALENDAR_TEXT_COLOR: "#000000",
     }
+
+
+async def test_options_flow_selects_errand_managers(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
+    """Keep selected login IDs in the integration options."""
+    user = MockUser(name="Parent").add_to_hass(hass)
+    config_entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {**DEFAULT_SETTINGS, CONF_CALENDARS: ["calendar.mock_calendar"], CONF_ERRAND_MANAGERS: [user.id]},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_CALENDAR_NAME: "Home", CONF_CALENDAR_COLOR: "#123456"}
+    )
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_ERRAND_MANAGERS] == [user.id]

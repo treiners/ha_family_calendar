@@ -8,6 +8,7 @@ import voluptuous as vol
 from custom_components.kdev_family_calendar.const import (
     CONF_CALENDARS,
     CONF_DAY_MARKERS,
+    CONF_ERRAND_MANAGERS,
     CONF_ICON_KEYWORDS,
     DEFAULT_SETTINGS,
 )
@@ -43,7 +44,9 @@ def get_markers_schema(day_markers: list[dict[str, Any]], icon_keywords: list[di
     )
 
 
-def get_options_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
+def get_options_schema(
+    defaults: Mapping[str, Any] | None = None, users: list[selector.SelectOptionDict] | None = None
+) -> vol.Schema:
     """
     Build the options form schema.
 
@@ -56,10 +59,17 @@ def get_options_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
     """
     defaults = defaults or {}
     normalized_defaults = {**DEFAULT_SETTINGS, **defaults}
+    available_users = {user["value"] for user in users or []}
+    managers = [user_id for user_id in defaults.get(CONF_ERRAND_MANAGERS, []) if user_id in available_users]
     return get_defaults_schema(normalized_defaults).extend(
         {
             vol.Required(CONF_CALENDARS, default=defaults.get(CONF_CALENDARS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="calendar", multiple=True),
+            ),
+            vol.Optional(CONF_ERRAND_MANAGERS, default=managers): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=users or [], multiple=True, mode=selector.SelectSelectorMode.DROPDOWN
+                ),
             ),
         },
     )

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import voluptuous as vol
 
-from custom_components.kdev_family_calendar.const import CONF_CALENDARS, DOMAIN
+from custom_components.kdev_family_calendar.const import CONF_CALENDARS, CONF_ERRAND_MANAGERS, DOMAIN
 from homeassistant.auth.permissions.const import POLICY_CONTROL, POLICY_READ
 from homeassistant.components import websocket_api
 from homeassistant.components.websocket_api.connection import ActiveConnection
@@ -54,6 +54,19 @@ def _can_read(connection: ActiveConnection, state: dict[str, Any]) -> bool:
     )
 
 
+@callback
+def _can_act(connection: ActiveConnection, entry: KdevFamilyCalendarConfigEntry, state: dict[str, Any]) -> bool:
+    calendars = [person["calendar_entity"] for person in state["people"]] or entry.options.get(CONF_CALENDARS, [])
+    return all(connection.user.permissions.check_entity(calendar, POLICY_CONTROL) for calendar in calendars)
+
+
+@callback
+def _can_manage(connection: ActiveConnection, entry: KdevFamilyCalendarConfigEntry, state: dict[str, Any]) -> bool:
+    return _can_act(connection, entry, state) and (
+        connection.user.is_admin or connection.user.id in entry.options.get(CONF_ERRAND_MANAGERS, [])
+    )
+
+
 @websocket_command({vol.Required("type"): f"{DOMAIN}/errands/get", **_BASE})
 @callback
 def _get(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> None:
@@ -80,11 +93,28 @@ def _subscribe(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str,
         if state is not None and not _can_read(connection, state):
             connection.send_event(msg["id"], {"available": False, "error": ERR_UNAUTHORIZED})
         else:
-            connection.send_event(msg["id"], {"available": state is not None, "data": state})
+            connection.send_event(
+                msg["id"],
+                {
+                    "available": state is not None,
+                    "data": state,
+                    "can_act": state is not None and _can_act(connection, entry, state),
+                    "can_manage": state is not None and _can_manage(connection, entry, state),
+                },
+            )
 
     connection.subscriptions[msg["id"]] = store.async_subscribe(update)
     connection.send_result(msg["id"])
-    connection.send_event(msg["id"], {"available": True, "data": store.async_snapshot()})
+    state = store.async_snapshot()
+    connection.send_event(
+        msg["id"],
+        {
+            "available": True,
+            "data": state,
+            "can_act": _can_act(connection, entry, state),
+            "can_manage": _can_manage(connection, entry, state),
+        },
+    )
 
 
 @websocket_command(
@@ -103,6 +133,13 @@ async def _set_person(hass: HomeAssistant, connection: ActiveConnection, msg: di
     """Add or update a person's calendar and approval rule."""
     if not (entry := _entry(hass, connection, msg)):
         return
+    store = entry.runtime_data.errands
+    if store is None:
+        connection.send_error(msg["id"], "errands_storage_error", "Errands storage is unavailable.")
+        return
+    if not _can_manage(connection, entry, store.async_snapshot()):
+        connection.send_error(msg["id"], ERR_UNAUTHORIZED, "Not allowed to manage errands.")
+        return
     calendar = msg["calendar_entity"]
     if calendar not in entry.options.get(CONF_CALENDARS, []):
         connection.send_error(msg["id"], ERR_INVALID_FORMAT, "Calendar is not selected in Family Calendar.")
@@ -111,10 +148,6 @@ async def _set_person(hass: HomeAssistant, connection: ActiveConnection, msg: di
         connection.send_error(msg["id"], ERR_UNAUTHORIZED, "Not allowed to change this calendar's errands.")
         return
     registry_entry = er.async_get(hass).async_get(calendar)
-    store = entry.runtime_data.errands
-    if store is None:
-        connection.send_error(msg["id"], "errands_storage_error", "Errands storage is unavailable.")
-        return
     existing = next(
         (person for person in store.async_snapshot()["people"] if person["id"] == msg.get("person_id")), None
     )
@@ -161,13 +194,10 @@ async def _apply(hass: HomeAssistant, connection: ActiveConnection, msg: dict[st
 
     @callback
     def authorized(state: dict[str, Any]) -> bool:
-        return connection.user.is_admin or (
-            bool(state["people"])
-            and all(
-                connection.user.permissions.check_entity(person["calendar_entity"], POLICY_READ)
-                and connection.user.permissions.check_entity(person["calendar_entity"], POLICY_CONTROL)
-                for person in state["people"]
-            )
+        return (
+            _can_read(connection, state)
+            and _can_act(connection, entry, state)
+            and (msg["command"] in ("complete", "deduct") or _can_manage(connection, entry, state))
         )
 
     try:

@@ -15,6 +15,7 @@ from custom_components.kdev_family_calendar.const import (
     DEFAULT_SETTINGS,
 )
 from homeassistant import config_entries
+from homeassistant.helpers.selector import SelectOptionDict
 
 from .schemas import get_calendar_settings_schema, get_markers_schema
 from .schemas.options import get_options_schema
@@ -35,17 +36,22 @@ class KdevFamilyCalendarOptionsFlow(config_entries.OptionsFlowWithReload):
         user_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
         """Select calendars and update global defaults."""
+        users: list[SelectOptionDict] = [
+            {"value": user.id, "label": user.name or user.id}
+            for user in await self.hass.auth.async_get_users()
+            if not user.system_generated
+        ]
         if user_input is not None:
             if not user_input[CONF_CALENDARS]:
                 return self.async_show_form(
                     step_id="init",
-                    data_schema=get_options_schema({**DEFAULT_SETTINGS, **self.config_entry.options}),
+                    data_schema=get_options_schema({**DEFAULT_SETTINGS, **self.config_entry.options}, users),
                     errors={"base": "invalid_calendars"},
                 )
             if user_input["start_hour"] >= user_input["end_hour"]:
                 return self.async_show_form(
                     step_id="init",
-                    data_schema=get_options_schema({**DEFAULT_SETTINGS, **self.config_entry.options}),
+                    data_schema=get_options_schema({**DEFAULT_SETTINGS, **self.config_entry.options}, users),
                     errors={"base": "invalid_hours"},
                 )
 
@@ -63,7 +69,7 @@ class KdevFamilyCalendarOptionsFlow(config_entries.OptionsFlowWithReload):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=get_options_schema({**DEFAULT_SETTINGS, **self.config_entry.options}),
+            data_schema=get_options_schema({**DEFAULT_SETTINGS, **self.config_entry.options}, users),
         )
 
     async def async_step_calendar_settings(

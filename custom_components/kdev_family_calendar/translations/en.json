@@ -73,6 +73,7 @@
         "description": "Change the calendars, palette, and defaults used by cards.",
         "data": {
           "calendars": "Calendars",
+          "errand_managers": "Additional errand managers",
           "view": "Default view",
           "layout": "Default layout",
           "start_hour": "Visible hours start",
@@ -88,6 +89,7 @@
         },
         "data_description": {
           "calendars": "Select one or more calendar entities to display.",
+          "errand_managers": "Select additional Home Assistant users who can manage and confirm errands. Administrators can always manage errands.",
           "view": "The initial date range shown by cards unless their YAML specifies a fixed view.",
           "layout": "The initial layout used by cards unless their YAML specifies a fixed layout.",
           "start_hour": "The first hour shown in the timeline, from 0 to 22.",

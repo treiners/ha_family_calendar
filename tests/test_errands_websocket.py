@@ -6,10 +6,10 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
 from pytest_homeassistant_custom_component.typing import MockHAClientWebSocket, WebSocketGenerator
 
-from custom_components.kdev_family_calendar.const import DOMAIN
+from custom_components.kdev_family_calendar.const import CONF_ERRAND_MANAGERS, DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util.file import WriteError
@@ -423,5 +423,30 @@ async def test_read_only_user_cannot_modify_people(
         calendar_entity="calendar.mock_calendar",
         approval_required=True,
         revision=0,
+    )
+    assert (await ws.receive_json())["error"]["code"] == "unauthorized"
+
+
+async def test_selected_read_only_user_remains_read_only(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    hass_ws_client: WebSocketGenerator,
+    hass_read_only_user: MockUser,
+    hass_read_only_access_token: str,
+) -> None:
+    """Selecting a read-only login cannot grant calendar-control permissions."""
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        config_entry, options={**config_entry.options, CONF_ERRAND_MANAGERS: [hass_read_only_user.id]}
+    )
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    ws = await hass_ws_client(access_token=hass_read_only_access_token)
+    await _send(ws, config_entry, "subscribe")
+    assert (await ws.receive_json())["success"]
+    event = (await ws.receive_json())["event"]
+    assert event["can_manage"] is False
+    assert event["can_act"] is False
+    await _send(
+        ws, config_entry, "set_person", calendar_entity="calendar.mock_calendar", approval_required=True, revision=0
     )
     assert (await ws.receive_json())["error"]["code"] == "unauthorized"
