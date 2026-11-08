@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/treiners/ha_family_calendar/compare/v0.1.4...v0.2.0) (2026-11-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* Non-administrator managers must be selected in the integration settings to manage or confirm errands.
+
+### Features
+
+* restrict errand management to selected logins ([eb875c2](https://github.com/treiners/ha_family_calendar/commit/eb875c27d8a38bb09114ae624fec1594642c7a6b))
+* rewards and tile design Cchanges ([a5b7ac7](https://github.com/treiners/ha_family_calendar/commit/a5b7ac736855217bd76c8c8b8ac1ec7a3d62f3c0))
+
 ## [0.1.4](https://github.com/treiners/ha_family_calendar/compare/v0.1.3...v0.1.4) (2026-11-06)
 
 
