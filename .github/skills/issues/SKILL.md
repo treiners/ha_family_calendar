@@ -1,6 +1,6 @@
 ---
 name: issues
-description: "Triage/fix the GitHub issue backlog via branch + PR, with auto-merge on green CI for this session."
+description: Triage/fix the GitHub issue backlog via branch + PR, with auto-merge on green CI for this session.
 disable-model-invocation: true
 ---
 
