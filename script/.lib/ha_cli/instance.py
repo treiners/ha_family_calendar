@@ -15,9 +15,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 import fcntl
 import json
+import os
 from pathlib import Path
 
-LOCK_FILE = Path("config/.ha_run.lock")
+# script/ha exports the config directory of the active Home Assistant environment.
+CONFIG_DIR = Path(os.environ.get("HA_CONFIG_DIR", "config"))
+LOCK_FILE = CONFIG_DIR / ".ha_run.lock"
+DEVELOP_RUN = Path(".local/ha-develop.json")
 
 
 @dataclass(frozen=True)
@@ -27,7 +31,6 @@ class RunState:
     running: bool
     pid: int | None = None
     started: datetime | None = None
-    ha_version: str | None = None
 
     @property
     def uptime(self) -> str:
@@ -66,4 +69,12 @@ def run_state() -> RunState:
         started = datetime.fromtimestamp(float(info["start_ts"]), tz=UTC)
     except ValueError, KeyError, TypeError:
         return RunState(running=True)
-    return RunState(running=True, pid=info.get("pid"), started=started, ha_version=info.get("ha_version"))
+    return RunState(running=True, pid=info.get("pid"), started=started)
+
+
+def develop_run() -> dict[str, str]:
+    """Return what script/develop recorded about the instance it last started: environment, version, who."""
+    try:
+        return json.loads(DEVELOP_RUN.read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return {}
